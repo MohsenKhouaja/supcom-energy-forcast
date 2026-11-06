@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Notebooks and editors
+.ipynb_checkpoints/
+.idea/
+.vscode/
+*.swp
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Private/raw data and generated artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+artifacts/
+checkpoints/
+models/
+experiments/runs/
+
+# Source documents may contain institutional/account information.
+*.pdf
+*.xlsx
+*.xls
+*.csv
+*.parquet
+
+# OS files
+.DS_Store
+Thumbs.db
