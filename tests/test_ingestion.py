@@ -12,6 +12,7 @@ from smartgrid.data.derive import derive
 from smartgrid.data.impute import impute
 from smartgrid.data.loader import CHANNELS, canonicalize, load_dataset, normalize_header, parse_timestamp
 from smartgrid.data.windowing import eligible_target_origins
+from smartgrid.evaluation.demand import demand_diagnostics
 
 POLICY = {"short_gap_max_intervals": 4, "medium_gap_max_intervals": 96,
           "donor_lookback_weeks": 8, "split_boundaries": []}
@@ -251,15 +252,59 @@ def test_power_factor_bounds(all_output):
         assert output["PF"].dropna().between(-1, 1).all(), meter
 
 
-def test_derived_S_matches_demand_within_5_percent_on_95_percent_of_observed_rows(all_output):
-    failures = {}
-    for meter, output in all_output.items():
-        good = output[["S_avg", "S_dmd_max"]].notna().all(axis=1) & ~output["is_imputed"]
-        compared = output.loc[good]
-        fraction = ((compared["S_avg"]-compared["S_dmd_max"]).abs() <= .05*compared["S_dmd_max"].abs()).mean() if len(compared) else 0.
-        if fraction < .95:
-            failures[meter] = f"{fraction:.6%} of {len(compared)} observed rows"
-    assert not failures, f"Required 95% of rows to agree within 5%; actual failures: {failures}"
+@pytest.fixture(scope="module")
+def demand_results(all_output):
+    return {meter: demand_diagnostics(frame, meter) for meter, frame in all_output.items()}
+
+
+def test_demand_max_bounds_average_on_99_percent_of_observed_rows(demand_results):
+    failures = {meter: {"fraction": stats["invariant_fraction"], "violations": len(violations)}
+                for meter, (stats, violations) in demand_results.items()
+                if not stats["invariant_fraction"] >= .99}
+    assert not failures, f"Demand maximum must bound average (0.01 kVA tolerance) on >=99%; {failures}. Every violating timestamp is in outputs/demand_invariant_violations.csv"
+
+
+def test_high_load_median_demand_deviation_below_10_percent(demand_results):
+    failures = {meter: {"median_deviation": stats["high_quartile_median_relative"], "rows": stats["high_quartile_relative_rows"]}
+                for meter, (stats, _) in demand_results.items()
+                if not stats["high_quartile_median_relative"] < .10}
+    assert not failures, f"For S_avg > meter P75, median relative deviation must be <0.10; {failures}"
+
+
+def test_demand_pearson_correlation_above_098_per_meter(demand_results):
+    failures = {meter: stats["pearson"] for meter, (stats, _) in demand_results.items()
+                if not stats["pearson"] > .98}
+    assert not failures, f"Observed Pearson correlation must exceed 0.98 per meter; {failures}"
+
+
+def test_demand_diagnostics_exclude_imputed_rows_and_separate_quartile_from_halves():
+    index = pd.date_range("2024-01-01", periods=101, freq="15min", name="timestamp")
+    s = np.arange(1., 102.)
+    frame = pd.DataFrame({"S_avg": s, "S_dmd_max": s*1.05, "is_imputed": False}, index=index)
+    frame.loc[index[-1], ["S_avg", "S_dmd_max", "is_imputed"]] = [1e9, -1e9, True]
+    frame.loc[index[0], "S_dmd_max"] = .9
+    stats, failed = demand_diagnostics(frame, "synthetic")
+    assert stats["comparable_rows"] == 100
+    assert stats["invariant_fraction"] == pytest.approx(.99)
+    assert failed["timestamp"].tolist() == [index[0]]
+    assert stats["p75_load_kVA"] == pytest.approx(75.25)
+    assert stats["high_quartile_rows"] == 25
+    assert stats["low_half_rows"] == stats["high_half_rows"] == 50
+    assert stats["high_half_median_relative"] == pytest.approx(.05/1.05)
+    assert stats["high_half_p90_relative"] == pytest.approx(.05/1.05)
+
+
+def test_zero_demand_ratios_and_idle_load_ties_are_explicit():
+    index = pd.date_range("2024-01-01", periods=5, freq="15min", name="timestamp")
+    frame = pd.DataFrame({"S_avg": [0., 0., 0., 1., 2.], "S_dmd_max": [0., 0., 0., .99, 1.98], "is_imputed": False}, index=index)
+    stats, failed = demand_diagnostics(frame, "idle")
+    assert stats["comparable_rows"] == 5
+    assert stats["zero_demand_rows"] == 3
+    assert stats["low_half_rows"] == 3
+    assert stats["low_half_relative_rows"] == 0
+    assert np.isnan(stats["low_half_median_relative"])
+    assert len(failed) == 1
+    assert failed["timestamp"].iloc[0] == index[-1]
 
 
 def test_all_real_medium_gap_energy_totals_and_closing_flags(all_output):

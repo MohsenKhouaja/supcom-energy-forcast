@@ -18,6 +18,7 @@ import pyarrow.parquet as pq
 from smartgrid.data.derive import derive
 from smartgrid.data.loader import LoadedDataset, load_dataset, meter_frame, raw_name
 from smartgrid.data.windowing import eligible_target_origins
+from smartgrid.evaluation.demand import demand_report
 
 OUTPUT = ["Ea_counter", "dEa", "P_avg", "Q_avg", "dEr", "S_avg", "PF", "P_dmd_max", "S_dmd_max", "is_imputed"]
 
@@ -96,11 +97,13 @@ def write_outputs(root, loaded, frames, gap_logs):
             for name in ("em_virtual.parquet", "all_meters.parquet")}
 
 
-def demand_agreement(frame):
-    finite = frame[["S_avg", "S_dmd_max"]].notna().all(axis=1) & ~frame["is_imputed"]
-    check = frame.loc[finite]
-    within = (check["S_avg"]-check["S_dmd_max"]).abs() <= .05*check["S_dmd_max"].abs()
-    return int(finite.sum()), float(within.mean()) if len(within) else None
+def write_demand_diagnostics(root, frames):
+    section, summary, violations = demand_report(frames)
+    (root/"reports").mkdir(exist_ok=True)
+    (root/"outputs").mkdir(exist_ok=True)
+    summary.to_csv(root/"reports/demand_diagnostics.csv", index=False)
+    violations.to_csv(root/"outputs/demand_invariant_violations.csv", index=False)
+    return section
 
 
 def f(value, digits=4):
@@ -192,13 +195,7 @@ def report(root, loaded, frames, stats, gaps, files, runtime):
         "| Month | Total dEa kWh | Max P_avg kW | Max S_avg kVA | Imputed rows |", "|---|---:|---:|---:|---:|"]
     for month, group in em.groupby(em.index.to_period("M")):
         lines.append(f"| {month} | {f(group['dEa'].sum(min_count=1),3)} | {f(group['P_avg'].max(),3)} | {f(group['S_avg'].max(),3)} | {int(group['is_imputed'].sum())} |")
-    lines += ["", "## Validation measurements and contradictions", "",
-        "S_avg derives from interval-average P/Q; S_dmd_max is a separate maximum-demand channel. "
-        "The requested 5%-on-95% agreement check is measured and tested, without relabeling either channel.", "",
-        "| Meter | Observed comparable S rows | Fraction within 5% of S_dmd_max |", "|---|---:|---:|"]
-    for meter, frame in frames.items():
-        count, fraction = demand_agreement(frame)
-        lines.append(f"| {meter} | {count} | {f(fraction,6)} |")
+    lines += ["", write_demand_diagnostics(root, frames)]
     positive_q = sum(int((meter_frame(loaded.frame, meter)["Q_avg"] > 0).sum()) for meter in loaded.meters)
     lines += ["", f"Observed positive-Q meter intervals: {positive_q}; the site must not be assumed capacitive at every interval. "
         f"Medium-gap warnings: {sum(bool(g['warnings']) for g in gaps)} of {len(gaps)} reported bounded/medium cases. "
@@ -224,9 +221,25 @@ def main():
     parser.add_argument("--load-only", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--record-validation", action="store_true")
+    parser.add_argument("--refresh-demand-diagnostics", action="store_true")
     args = parser.parse_args()
     started = time.monotonic()
     root = args.root.resolve()
+    if args.refresh_demand_diagnostics:
+        data = pd.read_parquet(root/"data/processed/all_meters.parquet", columns=["timestamp", "meter", "S_avg", "S_dmd_max", "is_imputed"])
+        frames = {meter: group.set_index("timestamp") for meter, group in data.groupby("meter", sort=True)}
+        section = write_demand_diagnostics(root, frames)
+        path = root/"reports/INGESTION.md"
+        body = path.read_text(encoding="utf-8").split("\n## Pytest result\n")[0]
+        start = body.find("## Validation measurements")
+        end = body.find("Observed positive-Q meter intervals:", start)
+        if start < 0 or end < 0:
+            raise ValueError("Cannot locate existing demand diagnostics in ingestion report")
+        body = body[:start]+section+"\n"+body[end:]
+        body = "\n".join(line for line in body.splitlines() if not line.startswith("Validation status:"))
+        path.write_text(body+"\n", encoding="utf-8")
+        print(section, flush=True)
+        return
     if args.record_validation:
         path = root/"reports/INGESTION.md"
         body = path.read_text(encoding="utf-8").split("\n## Pytest result\n")[0]

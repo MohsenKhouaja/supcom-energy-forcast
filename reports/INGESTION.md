@@ -2,6 +2,8 @@
 
 Validation status: pytest exit code 1. Validation has failures; the requested assertions and thresholds remain unchanged.
 
+
+
 VM project: `/home/khalifa/supcom-energy-forcast`. CPU-only; no modeling, feature engineering or notebooks.
 
 ## Sources and schema
@@ -373,26 +375,70 @@ Totals include flagged reconstructions and exclude remaining NaNs. They are not 
 | 2026-01 | 32472.300 | 77.840 | 85.208 | 11 |
 | 2026-02 | 39239.200 | 83.400 | 84.567 | 13 |
 
-## Validation measurements and contradictions
+## Validation measurements and load-dependent demand diagnostics
 
-S_avg derives from interval-average P/Q; S_dmd_max is a separate maximum-demand channel. The requested 5%-on-95% agreement check is measured and tested, without relabeling either channel.
+Observed rows only (is_imputed == False), with finite S_avg and S_dmd_max. The channels have different definitions: S_avg derives from interval-average P/Q, while S_dmd_max is a maximum-demand channel. The former 5%-on-95% agreement requirement is replaced by the three checks below.
 
-| Meter | Observed comparable S rows | Fraction within 5% of S_dmd_max |
-|---|---:|---:|
-| CLIM_SALLE_IT_(TGBT_D1) | 128450 | 0.913390 |
-| CLIM_TOUR_A_(TGBT_D6) | 128450 | 0.730977 |
-| EM_VIRTUAL | 128450 | 0.611522 |
-| ONDULEUR_1_(TGBT_DXX) | 123874 | 0.967112 |
-| ONDULEUR_2_(TGBT_DXX) | 128104 | 0.964201 |
-| PV_(CHAUFFERIE_PROV.) | 128450 | 0.979665 |
-| SALLE_B101_(A._MEZAN_TOUR_B) | 128412 | 0.997064 |
-| SALLE_B112_(A._MEZAN_TOUR_B) | 128412 | 0.552036 |
-| SALLE_B201_(A_1_ETAGE_TOUR_B) | 128412 | 0.959926 |
-| TGBT_TR1 | 128450 | 0.886026 |
-| TGBT_TR2 | 128450 | 0.724687 |
-| TOUR_A_(TGBT_D14) | 125674 | 0.840659 |
-| TOUR_C_(TGBT_D10) | 125674 | 0.748596 |
-| Tour_B_(TGBT_D5) | 128450 | 0.841923 |
+1. S_dmd_max >= S_avg - 0.01 on at least 99% of comparable rows, per meter.
+2. For S_avg strictly above that meter's observed 75th percentile, median (S_dmd_max-S_avg)/S_dmd_max < 0.10.
+3. Pearson correlation > 0.98 per meter.
+
+| Meter | Comparable rows | Invariant pass % | Violations | P75 S_avg kVA | Upper-quartile rows | Upper-quartile median deviation | Pearson r |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| CLIM_SALLE_IT_(TGBT_D1) | 128450 | 94.0436 | 7651 | 0.000000 | 18416 | 0.007216 | 0.947357 |
+| CLIM_TOUR_A_(TGBT_D6) | 128450 | 84.0397 | 20501 | 1.812319 | 32107 | -0.035604 | 0.904847 |
+| EM_VIRTUAL | 128450 | 53.2900 | 59999 | 82.360416 | 32113 | -0.017282 | 0.960646 |
+| ONDULEUR_1_(TGBT_DXX) | 123874 | 72.3372 | 34267 | 4.040854 | 30950 | 0.000126 | 0.984188 |
+| ONDULEUR_2_(TGBT_DXX) | 128104 | 72.8393 | 34794 | 3.645065 | 32013 | 0.000049 | 0.990444 |
+| PV_(CHAUFFERIE_PROV.) | 128450 | 96.2857 | 4771 | 0.000000 | 21655 | -0.000726 | 0.994788 |
+| SALLE_B101_(A._MEZAN_TOUR_B) | 128412 | 99.6208 | 487 | 0.791202 | 23428 | -0.005114 | 0.995167 |
+| SALLE_B112_(A._MEZAN_TOUR_B) | 128412 | 99.2345 | 983 | 0.063246 | 28800 | -0.030776 | 0.956588 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 128412 | 90.9892 | 11571 | 1.035857 | 32055 | -0.000393 | 0.987497 |
+| TGBT_TR1 | 128450 | 82.1409 | 22940 | 41.119349 | 32113 | 0.001237 | 0.986256 |
+| TGBT_TR2 | 128450 | 70.2281 | 38242 | 72.476973 | 32113 | -0.009683 | 0.981386 |
+| TOUR_A_(TGBT_D14) | 125674 | 67.4380 | 40922 | 4.254515 | 31419 | 0.000384 | 0.985182 |
+| TOUR_C_(TGBT_D10) | 125674 | 66.0964 | 42608 | 2.865388 | 31419 | 0.000107 | 0.984444 |
+| Tour_B_(TGBT_D5) | 128450 | 63.2534 | 47201 | 5.424786 | 32113 | 0.000361 | 0.952426 |
+
+Descriptive load halves (REPORT ONLY; no assertions): low means S_avg <= the meter's median, high means S_avg > median. Ties remain low, so idle-meter halves may have unequal sizes. Deviations are ratios, not percentages. S_dmd_max == 0 has an undefined relative deviation and is excluded only from ratio summaries; those rows remain in the invariant, quantiles and correlations. The ratio sample counts make this exclusion explicit.
+
+| Meter | Median S_avg kVA | Low rows / ratios | Low median deviation | Low P90 deviation | High rows / ratios | High median deviation | High P90 deviation | Zero-demand rows |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| CLIM_SALLE_IT_(TGBT_D1) | 0.000000 | 110034/41 | 1.000000 | 1.000000 | 18416/18380 | 0.007216 | 0.318347 | 110029 |
+| CLIM_TOUR_A_(TGBT_D6) | 0.000000 | 71662/29 | 1.000000 | 1.000000 | 56788/56748 | 0.000000 | 0.490141 | 71673 |
+| EM_VIRTUAL | 53.833015 | 64225/64207 | 0.002734 | 0.054529 | 64225/64201 | -0.001513 | 0.171569 | 42 |
+| ONDULEUR_1_(TGBT_DXX) | 3.592130 | 61948/61909 | 0.000421 | 0.009476 | 61926/61859 | 0.000110 | 0.014385 | 106 |
+| ONDULEUR_2_(TGBT_DXX) | 3.335963 | 64052/63976 | 0.000228 | 0.007345 | 64052/64034 | 0.000197 | 0.017544 | 94 |
+| PV_(CHAUFFERIE_PROV.) | 0.000000 | 106795/548 | 1.000000 | 1.000000 | 21655/21321 | -0.000726 | 0.013596 | 106581 |
+| SALLE_B101_(A._MEZAN_TOUR_B) | 0.781089 | 64627/64612 | 0.002633 | 0.010939 | 63785/63782 | -0.000078 | 0.006994 | 18 |
+| SALLE_B112_(A._MEZAN_TOUR_B) | 0.053852 | 76494/76483 | -0.030776 | 0.175379 | 51918/51911 | -0.030776 | 0.083754 | 18 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 0.962549 | 64385/64370 | 0.003104 | 0.017573 | 64027/64019 | 0.000072 | 0.014414 | 23 |
+| TGBT_TR1 | 0.000000 | 78287/12 | 1.000000 | 1.000000 | 50163/50143 | 0.001799 | 0.079758 | 78295 |
+| TGBT_TR2 | 31.375818 | 64225/16578 | 0.001607 | 0.035412 | 64225/64208 | 0.001383 | 0.162185 | 47664 |
+| TOUR_A_(TGBT_D14) | 3.185969 | 62838/62747 | 0.001031 | 0.020813 | 62836/62812 | 0.000585 | 0.057016 | 115 |
+| TOUR_C_(TGBT_D10) | 1.761391 | 62847/62834 | 0.004562 | 0.062770 | 62827/62799 | 0.000891 | 0.064148 | 41 |
+| Tour_B_(TGBT_D5) | 4.287214 | 64228/64175 | 0.000685 | 0.016017 | 64222/64200 | 0.000418 | 0.065676 | 75 |
+
+Physical-invariant violations: 366937. Every meter/timestamp, S_avg, S_dmd_max and shortfall is listed in `outputs/demand_invariant_violations.csv` (generated measurement dump, excluded from Git). Per-meter statistics are also saved in `reports/demand_diagnostics.csv`. These diagnostics do not alter the dataset.
+
+Worst observed violation per meter (the complete timestamp list is in the CSV above):
+
+| Meter | Timestamp | S_avg kVA | S_dmd_max kVA | Shortfall kVA |
+|---|---|---:|---:|---:|
+| CLIM_SALLE_IT_(TGBT_D1) | 2022-08-22 08:45:00 | 54.624461 | 5.470000 | 49.154461 |
+| CLIM_TOUR_A_(TGBT_D6) | 2024-08-15 10:15:00 | 13.143124 | 3.220000 | 9.923124 |
+| EM_VIRTUAL | 2022-06-28 14:15:00 | 295.125628 | 0.000000 | 295.125628 |
+| ONDULEUR_1_(TGBT_DXX) | 2022-08-27 10:00:00 | 12.791267 | 3.130000 | 9.661267 |
+| ONDULEUR_2_(TGBT_DXX) | 2025-03-12 07:45:00 | 7.878356 | 0.000000 | 7.878356 |
+| PV_(CHAUFFERIE_PROV.) | 2024-02-19 11:00:00 | 21.350169 | 0.000000 | 21.350169 |
+| SALLE_B101_(A._MEZAN_TOUR_B) | 2023-03-25 08:45:00 | 0.791202 | 0.000000 | 0.791202 |
+| SALLE_B112_(A._MEZAN_TOUR_B) | 2022-12-02 14:45:00 | 1.345362 | 0.370000 | 0.975362 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 2024-05-08 12:45:00 | 1.200666 | 0.000000 | 1.200666 |
+| TGBT_TR1 | 2025-05-19 15:00:00 | 241.044023 | 108.290000 | 132.754023 |
+| TGBT_TR2 | 2022-06-28 14:15:00 | 295.125628 | 0.000000 | 295.125628 |
+| TOUR_A_(TGBT_D14) | 2024-12-12 12:30:00 | 15.252531 | 0.000000 | 15.252531 |
+| TOUR_C_(TGBT_D10) | 2025-01-27 11:30:00 | 5.529602 | 0.000000 | 5.529602 |
+| Tour_B_(TGBT_D5) | 2024-08-30 13:45:00 | 68.719660 | 31.510000 | 37.209660 |
 
 Observed positive-Q meter intervals: 209857; the site must not be assumed capacitive at every interval. Medium-gap warnings: 122 of 172 reported bounded/medium cases. Uniform fallback is an estimate of interval shape, not a measured profile.
 
@@ -416,60 +462,75 @@ Pipeline runtime for this invocation: 5.77 seconds.
 platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /home/khalifa/supcom-energy-forcast/envs/main/bin/python
 cachedir: cache/pytest
 rootdir: /home/khalifa/supcom-energy-forcast
-collecting ... collected 28 items
+collecting ... collected 32 items
 
 tests/test_contracts.py::ProjectContractTests::test_canonical_columns_keep_timestamp_and_four_electrical_values PASSED [  3%]
-tests/test_contracts.py::ProjectContractTests::test_contract_rejects_inconsistent_cadence PASSED [  7%]
-tests/test_contracts.py::ProjectContractTests::test_contract_rejects_wrong_calendar_feature_count PASSED [ 10%]
-tests/test_contracts.py::ProjectContractTests::test_official_dimensions PASSED [ 14%]
-tests/test_ingestion.py::test_24_hour_rollover_and_leap_day PASSED       [ 17%]
-tests/test_ingestion.py::test_duplicate_collapse_and_explicit_grid PASSED [ 21%]
-tests/test_ingestion.py::test_named_csv_selection_with_reordered_columns PASSED [ 25%]
-tests/test_ingestion.py::test_xlsx_export_suffix_normalization_is_name_based PASSED [ 28%]
-tests/test_ingestion.py::test_short_gap_and_long_gap PASSED              [ 32%]
-tests/test_ingestion.py::test_medium_gap_has_L_plus_one_flagged_increments_and_conserves_energy PASSED [ 35%]
-tests/test_ingestion.py::test_both_reactive_counters_and_independent_PF_scale_warnings PASSED [ 39%]
-tests/test_ingestion.py::test_uniform_fallback_and_no_imputed_donor PASSED [ 42%]
-tests/test_ingestion.py::test_nearest_earlier_wholly_observed_donor PASSED [ 46%]
-tests/test_ingestion.py::test_donor_search_never_exceeds_eight_weeks PASSED [ 50%]
-tests/test_ingestion.py::test_unbounded_gaps_stay_nan_and_short_gap_cannot_cross_day PASSED [ 53%]
-tests/test_ingestion.py::test_no_read_across_explicit_split_boundary PASSED [ 57%]
-tests/test_ingestion.py::test_derived_energy_does_not_bridge_a_missing_grid_slot PASSED [ 60%]
-tests/test_ingestion.py::test_H96_targets_exclude_every_imputed_label_including_closing_increment PASSED [ 64%]
-tests/test_ingestion.py::test_output_has_no_duplicate_timestamps_and_requested_columns PASSED [ 67%]
-tests/test_ingestion.py::test_output_complete_strictly_increasing_grid PASSED [ 71%]
-tests/test_ingestion.py::test_observed_counter_never_decreases PASSED    [ 75%]
-tests/test_ingestion.py::test_dEa_stays_nan_after_a_missing_unimputed_slot PASSED [ 78%]
-tests/test_ingestion.py::test_no_growing_odometer_column_except_counters PASSED [ 82%]
-tests/test_ingestion.py::test_apparent_power_bound PASSED                [ 85%]
-tests/test_ingestion.py::test_power_factor_bounds PASSED                 [ 89%]
-tests/test_ingestion.py::test_derived_S_matches_demand_within_5_percent_on_95_percent_of_observed_rows FAILED [ 92%]
+tests/test_contracts.py::ProjectContractTests::test_contract_rejects_inconsistent_cadence PASSED [  6%]
+tests/test_contracts.py::ProjectContractTests::test_contract_rejects_wrong_calendar_feature_count PASSED [  9%]
+tests/test_contracts.py::ProjectContractTests::test_official_dimensions PASSED [ 12%]
+tests/test_ingestion.py::test_24_hour_rollover_and_leap_day PASSED       [ 15%]
+tests/test_ingestion.py::test_duplicate_collapse_and_explicit_grid PASSED [ 18%]
+tests/test_ingestion.py::test_named_csv_selection_with_reordered_columns PASSED [ 21%]
+tests/test_ingestion.py::test_xlsx_export_suffix_normalization_is_name_based PASSED [ 25%]
+tests/test_ingestion.py::test_short_gap_and_long_gap PASSED              [ 28%]
+tests/test_ingestion.py::test_medium_gap_has_L_plus_one_flagged_increments_and_conserves_energy PASSED [ 31%]
+tests/test_ingestion.py::test_both_reactive_counters_and_independent_PF_scale_warnings PASSED [ 34%]
+tests/test_ingestion.py::test_uniform_fallback_and_no_imputed_donor PASSED [ 37%]
+tests/test_ingestion.py::test_nearest_earlier_wholly_observed_donor PASSED [ 40%]
+tests/test_ingestion.py::test_donor_search_never_exceeds_eight_weeks PASSED [ 43%]
+tests/test_ingestion.py::test_unbounded_gaps_stay_nan_and_short_gap_cannot_cross_day PASSED [ 46%]
+tests/test_ingestion.py::test_no_read_across_explicit_split_boundary PASSED [ 50%]
+tests/test_ingestion.py::test_derived_energy_does_not_bridge_a_missing_grid_slot PASSED [ 53%]
+tests/test_ingestion.py::test_H96_targets_exclude_every_imputed_label_including_closing_increment PASSED [ 56%]
+tests/test_ingestion.py::test_output_has_no_duplicate_timestamps_and_requested_columns PASSED [ 59%]
+tests/test_ingestion.py::test_output_complete_strictly_increasing_grid PASSED [ 62%]
+tests/test_ingestion.py::test_observed_counter_never_decreases PASSED    [ 65%]
+tests/test_ingestion.py::test_dEa_stays_nan_after_a_missing_unimputed_slot PASSED [ 68%]
+tests/test_ingestion.py::test_no_growing_odometer_column_except_counters PASSED [ 71%]
+tests/test_ingestion.py::test_apparent_power_bound PASSED                [ 75%]
+tests/test_ingestion.py::test_power_factor_bounds PASSED                 [ 78%]
+tests/test_ingestion.py::test_demand_max_bounds_average_on_99_percent_of_observed_rows FAILED [ 81%]
+tests/test_ingestion.py::test_high_load_median_demand_deviation_below_10_percent PASSED [ 84%]
+tests/test_ingestion.py::test_demand_pearson_correlation_above_098_per_meter FAILED [ 87%]
+tests/test_ingestion.py::test_demand_diagnostics_exclude_imputed_rows_and_separate_quartile_from_halves PASSED [ 90%]
+tests/test_ingestion.py::test_zero_demand_ratios_and_idle_load_ties_are_explicit PASSED [ 93%]
 tests/test_ingestion.py::test_all_real_medium_gap_energy_totals_and_closing_flags PASSED [ 96%]
 tests/test_ingestion.py::test_long_format_grid_and_provenance PASSED     [100%]
 
 =================================== FAILURES ===================================
-_ test_derived_S_matches_demand_within_5_percent_on_95_percent_of_observed_rows _
+________ test_demand_max_bounds_average_on_99_percent_of_observed_rows _________
 
-all_output = {'CLIM_SALLE_IT_(TGBT_D1)':                      Ea_counter  dEa  ...  S_dmd_max  is_imputed
-timestamp                ...    3.77       False
-2026-02-28 23:45:00    121278.8  0.8  ...       3.76       False
+demand_results = {'CLIM_SALLE_IT_(TGBT_D1)': ({'meter': 'CLIM_SALLE_IT_(TGBT_D1)', 'comparable_rows': 128450, 'invariant_fraction': 0.9...011487
+34266  ONDULEUR_1_(TGBT_DXX) 2026-02-28 22:45:00  ...       3.80       0.028969
 
-[128832 rows x 10 columns], ...}
+[34267 rows x 5 columns]), ...}
 
-    def test_derived_S_matches_demand_within_5_percent_on_95_percent_of_observed_rows(all_output):
-        failures = {}
-        for meter, output in all_output.items():
-            good = output[["S_avg", "S_dmd_max"]].notna().all(axis=1) & ~output["is_imputed"]
-            compared = output.loc[good]
-            fraction = ((compared["S_avg"]-compared["S_dmd_max"]).abs() <= .05*compared["S_dmd_max"].abs()).mean() if len(compared) else 0.
-            if fraction < .95:
-                failures[meter] = f"{fraction:.6%} of {len(compared)} observed rows"
->       assert not failures, f"Required 95% of rows to agree within 5%; actual failures: {failures}"
-E       AssertionError: Required 95% of rows to agree within 5%; actual failures: {'CLIM_SALLE_IT_(TGBT_D1)': '91.339042% of 128450 observed rows', 'CLIM_TOUR_A_(TGBT_D6)': '73.097703% of 128450 observed rows', 'EM_VIRTUAL': '61.152199% of 128450 observed rows', 'SALLE_B112_(A._MEZAN_TOUR_B)': '55.203564% of 128412 observed rows', 'TGBT_TR1': '88.602569% of 128450 observed rows', 'TGBT_TR2': '72.468665% of 128450 observed rows', 'TOUR_A_(TGBT_D14)': '84.065917% of 125674 observed rows', 'TOUR_C_(TGBT_D10)': '74.859557% of 125674 observed rows', 'Tour_B_(TGBT_D5)': '84.192293% of 128450 observed rows'}
-E       assert not {'CLIM_SALLE_IT_(TGBT_D1)': '91.339042% of 128450 observed rows', 'CLIM_TOUR_A_(TGBT_D6)': '73.097703% of 128450 observed rows', 'EM_VIRTUAL': '61.152199% of 128450 observed rows', 'SALLE_B112_(A._MEZAN_TOUR_B)': '55.203564% of 128412 observed rows', ...}
+    def test_demand_max_bounds_average_on_99_percent_of_observed_rows(demand_results):
+        failures = {meter: {"fraction": stats["invariant_fraction"], "violations": len(violations)}
+                    for meter, (stats, violations) in demand_results.items()
+                    if not stats["invariant_fraction"] >= .99}
+>       assert not failures, f"Demand maximum must bound average (0.01 kVA tolerance) on >=99%; {failures}. Every violating timestamp is in outputs/demand_invariant_violations.csv"
+E       AssertionError: Demand maximum must bound average (0.01 kVA tolerance) on >=99%; {'CLIM_SALLE_IT_(TGBT_D1)': {'fraction': 0.9404359673024523, 'violations': 7651}, 'CLIM_TOUR_A_(TGBT_D6)': {'fraction': 0.8403970416504476, 'violations': 20501}, 'EM_VIRTUAL': {'fraction': 0.532899961074348, 'violations': 59999}, 'ONDULEUR_1_(TGBT_DXX)': {'fraction': 0.7233721362029158, 'violations': 34267}, 'ONDULEUR_2_(TGBT_DXX)': {'fraction': 0.7283925560482108, 'violations': 34794}, 'PV_(CHAUFFERIE_PROV.)': {'fraction': 0.9628571428571429, 'violations': 4771}, 'SALLE_B201_(A_1_ETAGE_TOUR_B)': {'fraction': 0.9098915989159891, 'violations': 11571}, 'TGBT_TR1': {'fraction': 0.8214091086025691, 'violations': 22940}, 'TGBT_TR2': {'fraction': 0.7022810432074738, 'violations': 38242}, 'TOUR_A_(TGBT_D14)': {'fraction': 0.6743797444180977, 'violations': 40922}, 'TOUR_C_(TGBT_D10)': {'fraction': 0.6609640816716266, 'violations': 42608}, 'Tour_B_(TGBT_D5)': {'fraction': 0.632534059945504, 'violations': 47201}}. Every violating timestamp is in outputs/demand_invariant_violations.csv
+E       assert not {'CLIM_SALLE_IT_(TGBT_D1)': {'fraction': 0.9404359673024523, 'violations': 7651}, 'CLIM_TOUR_A_(TGBT_D6)': {'fraction': 0.8403970416504476, 'violations': 20501}, 'EM_VIRTUAL': {'fraction': 0.532899961074348, 'violations': 59999}, 'ONDULEUR_1_(TGBT_DXX)': {'fraction': 0.7233721362029158, 'violations': 34267}, ...}
 
-tests/test_ingestion.py:262: AssertionError
+tests/test_ingestion.py:264: AssertionError
+_____________ test_demand_pearson_correlation_above_098_per_meter ______________
+
+demand_results = {'CLIM_SALLE_IT_(TGBT_D1)': ({'meter': 'CLIM_SALLE_IT_(TGBT_D1)', 'comparable_rows': 128450, 'invariant_fraction': 0.9...011487
+34266  ONDULEUR_1_(TGBT_DXX) 2026-02-28 22:45:00  ...       3.80       0.028969
+
+[34267 rows x 5 columns]), ...}
+
+    def test_demand_pearson_correlation_above_098_per_meter(demand_results):
+        failures = {meter: stats["pearson"] for meter, (stats, _) in demand_results.items()
+                    if not stats["pearson"] > .98}
+>       assert not failures, f"Observed Pearson correlation must exceed 0.98 per meter; {failures}"
+E       AssertionError: Observed Pearson correlation must exceed 0.98 per meter; {'CLIM_SALLE_IT_(TGBT_D1)': 0.9473565298904467, 'CLIM_TOUR_A_(TGBT_D6)': 0.9048465695348769, 'EM_VIRTUAL': 0.9606464959557726, 'SALLE_B112_(A._MEZAN_TOUR_B)': 0.9565882128734808, 'Tour_B_(TGBT_D5)': 0.9524260645772332}
+E       assert not {'CLIM_SALLE_IT_(TGBT_D1)': 0.9473565298904467, 'CLIM_TOUR_A_(TGBT_D6)': 0.9048465695348769, 'EM_VIRTUAL': 0.9606464959557726, 'SALLE_B112_(A._MEZAN_TOUR_B)': 0.9565882128734808, ...}
+
+tests/test_ingestion.py:277: AssertionError
 =========================== short test summary info ============================
-FAILED tests/test_ingestion.py::test_derived_S_matches_demand_within_5_percent_on_95_percent_of_observed_rows
-========================= 1 failed, 27 passed in 4.46s =========================
+FAILED tests/test_ingestion.py::test_demand_max_bounds_average_on_99_percent_of_observed_rows
+FAILED tests/test_ingestion.py::test_demand_pearson_correlation_above_098_per_meter
+========================= 2 failed, 30 passed in 4.47s =========================
 ```
