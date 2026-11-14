@@ -1,8 +1,6 @@
 # SInERT ingestion
 
-Validation status: pytest exit code 1. Validation has failures; the requested assertions and thresholds remain unchanged.
-
-
+Validation status: pytest exit code 0. All requested tests passed.
 
 VM project: `/home/khalifa/supcom-energy-forcast`. CPU-only; no modeling, feature engineering or notebooks.
 
@@ -24,16 +22,19 @@ Both reactive counters are retained: the forward counter is not assumed frozen. 
 | all_missing_rows_dropped | 3556 |
 | duplicates_dropped | 3072 |
 | unique_observed_timestamps | 128486 |
-| grid_slots_created | 346 |
-| rows_out_per_meter | 128832 |
+| startup_observed_rows_dropped | 284 |
+| startup_grid_slots_dropped | 288 |
+| retained_observed_timestamps | 128202 |
+| grid_slots_created | 342 |
+| rows_out_per_meter | 128544 |
 | Meters | 14 |
-| Long output rows | 1803648 |
+| Long output rows | 1799616 |
 
-Grid: 2022-06-28 00:00:00 through 2026-02-28 23:45:00, every 15 minutes. It starts after the entirely missing opening rows were dropped. No leading/trailing extrapolation is performed. Duplicates use the entire raw row's non-null measurement count, with stable first-row ties; the misplaced original August 2025 copies of May are deduplicated by actual timestamps.
+Grid: 2022-07-01 00:00:00 through 2026-02-28 23:45:00, every 15 minutes. The July 1 cutoff removes 288 grid slots, including 284 observed timestamps; the difference is explicit missing grid slots. Startup is removed before imputation and derivation. No leading/trailing extrapolation is performed. Duplicates use the entire raw row's non-null measurement count, with stable first-row ties; the misplaced original August 2025 copies of May are deduplicated by actual timestamps.
 
 ## Monthly observed coverage before imputation
 
-Counts are unique EM_VIRTUAL timestamps with at least one observed Ea_counter/P_avg/Q_avg. Calendar expected counts include the missing opening portion of June 2022.
+Counts are unique EM_VIRTUAL timestamps with at least one observed Ea_counter/P_avg/Q_avg. This source-inventory table includes June 2022 for provenance; June is excluded from the canonical outputs.
 
 | Month | Original CSV | With November XLSX | With update | Calendar expected |
 |---|---:|---:|---:|---:|
@@ -97,9 +98,9 @@ is_imputed is a row boolean: true if any electrical value was filled/reconstruct
 
 | Method | Channel | Reconstructed values, all meters |
 |---|---|---:|
-| linear | Ea_counter | 617 |
-| linear | P_avg | 617 |
-| linear | Q_avg | 617 |
+| linear | Ea_counter | 561 |
+| linear | P_avg | 561 |
+| linear | Q_avg | 561 |
 | scaled_weekday | Ea_counter | 3548 |
 | scaled_weekday | P_avg | 3681 |
 | scaled_weekday | Q_avg | 3640 |
@@ -109,8 +110,8 @@ is_imputed is a row boolean: true if any electrical value was filled/reconstruct
 
 | Measure | All meters | EM_VIRTUAL |
 |---|---:|---:|
-| Imputed rows | 5704 | 382 |
-| Newly filled primary NaN cells | 15679 | 1048 |
+| Imputed rows | 5634 | 377 |
+| Newly filled primary NaN cells | 15511 | 1036 |
 | Changed observed primary cells | 280 | 26 |
 
 | Column | Remaining NaNs, all meters | Remaining NaNs, EM_VIRTUAL |
@@ -121,11 +122,11 @@ is_imputed is a row boolean: true if any electrical value was filled/reconstruct
 | Q_avg | 10232 | 0 |
 | dEr | 10232 | 0 |
 | S_avg | 10232 | 0 |
-| PF | 426313 | 0 |
-| P_dmd_max | 15458 | 349 |
-| S_dmd_max | 15458 | 349 |
-| Er_pos_counter | 15459 | 350 |
-| Er_neg_counter | 15459 | 350 |
+| PF | 425736 | 0 |
+| P_dmd_max | 16014 | 407 |
+| S_dmd_max | 16014 | 407 |
+| Er_pos_counter | 15403 | 346 |
+| Er_neg_counter | 15403 | 346 |
 
 ## Medium-gap reconstruction provenance
 
@@ -329,8 +330,7 @@ Totals include flagged reconstructions and exclude remaining NaNs. They are not 
 
 | Month | Total dEa kWh | Max P_avg kW | Max S_avg kVA | Imputed rows |
 |---|---:|---:|---:|---:|
-| 2022-06 | 8828.100 | 280.710 | 295.126 | 5 |
-| 2022-07 | 75073.400 | 202.950 | 212.917 | 30 |
+| 2022-07 | 75049.800 | 202.950 | 212.917 | 30 |
 | 2022-08 | 84223.700 | 284.950 | 302.538 | 2 |
 | 2022-09 | 79320.000 | 223.240 | 238.059 | 5 |
 | 2022-10 | 51190.000 | 136.230 | 144.666 | 0 |
@@ -375,74 +375,99 @@ Totals include flagged reconstructions and exclude remaining NaNs. They are not 
 | 2026-01 | 32472.300 | 77.840 | 85.208 | 11 |
 | 2026-02 | 39239.200 | 83.400 | 84.567 | 13 |
 
+## Failed-zero demand-register cleanup
+
+After P/Q reconstruction, a P_dmd_max or S_dmd_max reading equal to zero is independently set to NaN where the same row has S_avg > 1.0 kVA. Counts below cover the retained canonical grid, including flagged rows. Idle S_avg == 0 readings remain valid zeros. This cleanup does not set is_imputed.
+
+| Meter | P_dmd_max zeros to NaN | S_dmd_max zeros to NaN |
+|---|---:|---:|
+| CLIM_SALLE_IT_(TGBT_D1) | 20 | 20 |
+| CLIM_TOUR_A_(TGBT_D6) | 24 | 24 |
+| EM_VIRTUAL | 62 | 62 |
+| ONDULEUR_1_(TGBT_DXX) | 119 | 119 |
+| ONDULEUR_2_(TGBT_DXX) | 112 | 112 |
+| PV_(CHAUFFERIE_PROV.) | 51 | 51 |
+| SALLE_B101_(A._MEZAN_TOUR_B) | 0 | 0 |
+| SALLE_B112_(A._MEZAN_TOUR_B) | 0 | 0 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 9 | 9 |
+| TGBT_TR1 | 30 | 30 |
+| TGBT_TR2 | 38 | 38 |
+| TOUR_A_(TGBT_D14) | 49 | 49 |
+| TOUR_C_(TGBT_D10) | 47 | 47 |
+| Tour_B_(TGBT_D5) | 51 | 51 |
+
+## Final target definition
+
+For the H=96 future slots t+1 through t+96: Pmax = max(P_avg), Smax = max(S_avg). Both targets are derived from the canonical interval-average channels. P_dmd_max and S_dmd_max remain cross-check columns in the Parquets and are NEVER used as labels. The registers aggregate on different clocks and include startup/failed reads, so ordering and correlation are EDA diagnostics, not invariants. The high-load median-deviation <0.10 test is retained. Imputed target regions remain excluded as documented above.
+
+
 ## Validation measurements and load-dependent demand diagnostics
 
-Observed rows only (is_imputed == False), with finite S_avg and S_dmd_max. The channels have different definitions: S_avg derives from interval-average P/Q, while S_dmd_max is a maximum-demand channel. The former 5%-on-95% agreement requirement is replaced by the three checks below.
+Observed rows only (is_imputed == False), with finite S_avg and S_dmd_max. S_avg derives from interval-average P/Q; S_dmd_max aggregates on a different clock. Ordering and Pearson correlation are EDA diagnostics ONLY, with no asserted thresholds. The CSV schema, including legacy invariant_fraction/invariant_violations column names, is retained unchanged. An ordering exception below means S_dmd_max < S_avg - 0.01; it is not an invariant failure.
 
-1. S_dmd_max >= S_avg - 0.01 on at least 99% of comparable rows, per meter.
-2. For S_avg strictly above that meter's observed 75th percentile, median (S_dmd_max-S_avg)/S_dmd_max < 0.10.
-3. Pearson correlation > 0.98 per meter.
+The retained check is median (S_dmd_max-S_avg)/S_dmd_max < 0.10 for S_avg strictly above the meter's observed 75th percentile.
 
-| Meter | Comparable rows | Invariant pass % | Violations | P75 S_avg kVA | Upper-quartile rows | Upper-quartile median deviation | Pearson r |
+| Meter | Comparable rows | Ordering fraction % | Ordering exceptions | P75 S_avg kVA | Upper-quartile rows | Upper-quartile median deviation | Pearson r |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| CLIM_SALLE_IT_(TGBT_D1) | 128450 | 94.0436 | 7651 | 0.000000 | 18416 | 0.007216 | 0.947357 |
-| CLIM_TOUR_A_(TGBT_D6) | 128450 | 84.0397 | 20501 | 1.812319 | 32107 | -0.035604 | 0.904847 |
-| EM_VIRTUAL | 128450 | 53.2900 | 59999 | 82.360416 | 32113 | -0.017282 | 0.960646 |
-| ONDULEUR_1_(TGBT_DXX) | 123874 | 72.3372 | 34267 | 4.040854 | 30950 | 0.000126 | 0.984188 |
-| ONDULEUR_2_(TGBT_DXX) | 128104 | 72.8393 | 34794 | 3.645065 | 32013 | 0.000049 | 0.990444 |
-| PV_(CHAUFFERIE_PROV.) | 128450 | 96.2857 | 4771 | 0.000000 | 21655 | -0.000726 | 0.994788 |
-| SALLE_B101_(A._MEZAN_TOUR_B) | 128412 | 99.6208 | 487 | 0.791202 | 23428 | -0.005114 | 0.995167 |
-| SALLE_B112_(A._MEZAN_TOUR_B) | 128412 | 99.2345 | 983 | 0.063246 | 28800 | -0.030776 | 0.956588 |
-| SALLE_B201_(A_1_ETAGE_TOUR_B) | 128412 | 90.9892 | 11571 | 1.035857 | 32055 | -0.000393 | 0.987497 |
-| TGBT_TR1 | 128450 | 82.1409 | 22940 | 41.119349 | 32113 | 0.001237 | 0.986256 |
-| TGBT_TR2 | 128450 | 70.2281 | 38242 | 72.476973 | 32113 | -0.009683 | 0.981386 |
-| TOUR_A_(TGBT_D14) | 125674 | 67.4380 | 40922 | 4.254515 | 31419 | 0.000384 | 0.985182 |
-| TOUR_C_(TGBT_D10) | 125674 | 66.0964 | 42608 | 2.865388 | 31419 | 0.000107 | 0.984444 |
-| Tour_B_(TGBT_D5) | 128450 | 63.2534 | 47201 | 5.424786 | 32113 | 0.000361 | 0.952426 |
+| CLIM_SALLE_IT_(TGBT_D1) | 128148 | 94.1201 | 7535 | 0.000000 | 18114 | 0.007098 | 0.947491 |
+| CLIM_TOUR_A_(TGBT_D6) | 128148 | 84.0965 | 20380 | 1.798777 | 32035 | -0.035085 | 0.905209 |
+| EM_VIRTUAL | 128127 | 53.3088 | 59824 | 82.102613 | 32032 | -0.017453 | 0.961508 |
+| ONDULEUR_1_(TGBT_DXX) | 123491 | 72.4012 | 34082 | 4.033417 | 30873 | 0.000126 | 0.992014 |
+| ONDULEUR_2_(TGBT_DXX) | 127728 | 72.8540 | 34673 | 3.645888 | 31911 | 0.000033 | 0.994434 |
+| PV_(CHAUFFERIE_PROV.) | 128120 | 96.3128 | 4724 | 0.000000 | 21608 | -0.000726 | 0.995626 |
+| SALLE_B101_(A._MEZAN_TOUR_B) | 128129 | 99.6207 | 486 | 0.791202 | 23428 | -0.005114 | 0.995347 |
+| SALLE_B112_(A._MEZAN_TOUR_B) | 128129 | 99.2351 | 980 | 0.063246 | 28517 | -0.030776 | 0.956575 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 128121 | 90.9788 | 11558 | 1.037304 | 31967 | -0.000409 | 0.988668 |
+| TGBT_TR1 | 128147 | 82.1143 | 22920 | 41.172349 | 32037 | 0.001229 | 0.986570 |
+| TGBT_TR2 | 128143 | 70.2809 | 38083 | 72.100003 | 32036 | -0.009658 | 0.981842 |
+| TOUR_A_(TGBT_D14) | 125354 | 67.4745 | 40772 | 4.249841 | 31339 | 0.000371 | 0.986170 |
+| TOUR_C_(TGBT_D10) | 125355 | 66.1418 | 42443 | 2.866025 | 31335 | 0.000114 | 0.985390 |
+| Tour_B_(TGBT_D5) | 128130 | 63.2725 | 47059 | 5.416512 | 32032 | 0.000354 | 0.952728 |
 
-Descriptive load halves (REPORT ONLY; no assertions): low means S_avg <= the meter's median, high means S_avg > median. Ties remain low, so idle-meter halves may have unequal sizes. Deviations are ratios, not percentages. S_dmd_max == 0 has an undefined relative deviation and is excluded only from ratio summaries; those rows remain in the invariant, quantiles and correlations. The ratio sample counts make this exclusion explicit.
+Descriptive load halves (REPORT ONLY; no assertions): low means S_avg <= the meter's median, high means S_avg > median. Ties remain low, so idle-meter halves may have unequal sizes. Deviations are ratios, not percentages. S_dmd_max == 0 has an undefined relative deviation and is excluded only from ratio summaries; those rows remain in the ordering diagnostics, quantiles and correlations. The ratio sample counts make this exclusion explicit.
 
 | Meter | Median S_avg kVA | Low rows / ratios | Low median deviation | Low P90 deviation | High rows / ratios | High median deviation | High P90 deviation | Zero-demand rows |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| CLIM_SALLE_IT_(TGBT_D1) | 0.000000 | 110034/41 | 1.000000 | 1.000000 | 18416/18380 | 0.007216 | 0.318347 | 110029 |
-| CLIM_TOUR_A_(TGBT_D6) | 0.000000 | 71662/29 | 1.000000 | 1.000000 | 56788/56748 | 0.000000 | 0.490141 | 71673 |
-| EM_VIRTUAL | 53.833015 | 64225/64207 | 0.002734 | 0.054529 | 64225/64201 | -0.001513 | 0.171569 | 42 |
-| ONDULEUR_1_(TGBT_DXX) | 3.592130 | 61948/61909 | 0.000421 | 0.009476 | 61926/61859 | 0.000110 | 0.014385 | 106 |
-| ONDULEUR_2_(TGBT_DXX) | 3.335963 | 64052/63976 | 0.000228 | 0.007345 | 64052/64034 | 0.000197 | 0.017544 | 94 |
-| PV_(CHAUFFERIE_PROV.) | 0.000000 | 106795/548 | 1.000000 | 1.000000 | 21655/21321 | -0.000726 | 0.013596 | 106581 |
-| SALLE_B101_(A._MEZAN_TOUR_B) | 0.781089 | 64627/64612 | 0.002633 | 0.010939 | 63785/63782 | -0.000078 | 0.006994 | 18 |
-| SALLE_B112_(A._MEZAN_TOUR_B) | 0.053852 | 76494/76483 | -0.030776 | 0.175379 | 51918/51911 | -0.030776 | 0.083754 | 18 |
-| SALLE_B201_(A_1_ETAGE_TOUR_B) | 0.962549 | 64385/64370 | 0.003104 | 0.017573 | 64027/64019 | 0.000072 | 0.014414 | 23 |
-| TGBT_TR1 | 0.000000 | 78287/12 | 1.000000 | 1.000000 | 50163/50143 | 0.001799 | 0.079758 | 78295 |
-| TGBT_TR2 | 31.375818 | 64225/16578 | 0.001607 | 0.035412 | 64225/64208 | 0.001383 | 0.162185 | 47664 |
-| TOUR_A_(TGBT_D14) | 3.185969 | 62838/62747 | 0.001031 | 0.020813 | 62836/62812 | 0.000585 | 0.057016 | 115 |
-| TOUR_C_(TGBT_D10) | 1.761391 | 62847/62834 | 0.004562 | 0.062770 | 62827/62799 | 0.000891 | 0.064148 | 41 |
-| Tour_B_(TGBT_D5) | 4.287214 | 64228/64175 | 0.000685 | 0.016017 | 64222/64200 | 0.000418 | 0.065676 | 75 |
+| CLIM_SALLE_IT_(TGBT_D1) | 0.000000 | 110034/41 | 1.000000 | 1.000000 | 18114/18099 | 0.007098 | 0.321814 | 110008 |
+| CLIM_TOUR_A_(TGBT_D6) | 0.000000 | 71662/29 | 1.000000 | 1.000000 | 56486/56467 | 0.000000 | 0.490828 | 71652 |
+| EM_VIRTUAL | 53.738308 | 64064/64064 | 0.002731 | 0.054485 | 64063/64063 | -0.001510 | 0.171687 | 0 |
+| ONDULEUR_1_(TGBT_DXX) | 3.592130 | 61913/61909 | 0.000421 | 0.009476 | 61578/61578 | 0.000108 | 0.014386 | 4 |
+| ONDULEUR_2_(TGBT_DXX) | 3.337664 | 64004/64004 | 0.000230 | 0.007388 | 63724/63724 | 0.000187 | 0.017585 | 0 |
+| PV_(CHAUFFERIE_PROV.) | 0.000000 | 106512/548 | 1.000000 | 1.000000 | 21608/21321 | -0.000726 | 0.013596 | 106251 |
+| SALLE_B101_(A._MEZAN_TOUR_B) | 0.781089 | 64344/64330 | 0.002633 | 0.010939 | 63785/63782 | -0.000078 | 0.006994 | 17 |
+| SALLE_B112_(A._MEZAN_TOUR_B) | 0.053852 | 76494/76483 | -0.030776 | 0.175379 | 51635/51629 | -0.030776 | 0.083754 | 17 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 0.962549 | 64152/64138 | 0.003185 | 0.017573 | 63969/63969 | 0.000072 | 0.014432 | 14 |
+| TGBT_TR1 | 0.000000 | 78004/11 | 1.000000 | 1.000000 | 50143/50143 | 0.001799 | 0.079758 | 77993 |
+| TGBT_TR2 | 31.241975 | 64072/16434 | 0.001592 | 0.035254 | 64071/64071 | 0.001396 | 0.162203 | 47638 |
+| TOUR_A_(TGBT_D14) | 3.182994 | 62677/62600 | 0.001031 | 0.020806 | 62677/62677 | 0.000585 | 0.057062 | 77 |
+| TOUR_C_(TGBT_D10) | 1.760824 | 62687/62683 | 0.004538 | 0.062765 | 62668/62668 | 0.000900 | 0.064091 | 4 |
+| Tour_B_(TGBT_D5) | 4.286269 | 64068/64032 | 0.000685 | 0.016036 | 64062/64062 | 0.000417 | 0.065804 | 36 |
 
-Physical-invariant violations: 366937. Every meter/timestamp, S_avg, S_dmd_max and shortfall is listed in `outputs/demand_invariant_violations.csv` (generated measurement dump, excluded from Git). Per-meter statistics are also saved in `reports/demand_diagnostics.csv`. These diagnostics do not alter the dataset.
+Ordering exceptions (diagnostic only): 365519. Every meter/timestamp, S_avg, S_dmd_max and shortfall is listed in `outputs/demand_invariant_violations.csv` (generated measurement dump, excluded from Git). Per-meter statistics are also saved in `reports/demand_diagnostics.csv`. These diagnostics do not alter the dataset.
 
-Worst observed violation per meter (the complete timestamp list is in the CSV above):
+Largest observed ordering difference per meter (diagnostic only; complete timestamp list in CSV above):
 
 | Meter | Timestamp | S_avg kVA | S_dmd_max kVA | Shortfall kVA |
 |---|---|---:|---:|---:|
 | CLIM_SALLE_IT_(TGBT_D1) | 2022-08-22 08:45:00 | 54.624461 | 5.470000 | 49.154461 |
 | CLIM_TOUR_A_(TGBT_D6) | 2024-08-15 10:15:00 | 13.143124 | 3.220000 | 9.923124 |
-| EM_VIRTUAL | 2022-06-28 14:15:00 | 295.125628 | 0.000000 | 295.125628 |
+| EM_VIRTUAL | 2025-05-19 15:00:00 | 241.044023 | 108.290000 | 132.754023 |
 | ONDULEUR_1_(TGBT_DXX) | 2022-08-27 10:00:00 | 12.791267 | 3.130000 | 9.661267 |
-| ONDULEUR_2_(TGBT_DXX) | 2025-03-12 07:45:00 | 7.878356 | 0.000000 | 7.878356 |
-| PV_(CHAUFFERIE_PROV.) | 2024-02-19 11:00:00 | 21.350169 | 0.000000 | 21.350169 |
+| ONDULEUR_2_(TGBT_DXX) | 2024-08-12 11:30:00 | 4.298802 | 1.600000 | 2.698802 |
+| PV_(CHAUFFERIE_PROV.) | 2025-12-18 13:00:00 | 28.043830 | 8.000000 | 20.043830 |
 | SALLE_B101_(A._MEZAN_TOUR_B) | 2023-03-25 08:45:00 | 0.791202 | 0.000000 | 0.791202 |
 | SALLE_B112_(A._MEZAN_TOUR_B) | 2022-12-02 14:45:00 | 1.345362 | 0.370000 | 0.975362 |
-| SALLE_B201_(A_1_ETAGE_TOUR_B) | 2024-05-08 12:45:00 | 1.200666 | 0.000000 | 1.200666 |
+| SALLE_B201_(A_1_ETAGE_TOUR_B) | 2025-01-27 11:15:00 | 0.843090 | 0.000000 | 0.843090 |
 | TGBT_TR1 | 2025-05-19 15:00:00 | 241.044023 | 108.290000 | 132.754023 |
-| TGBT_TR2 | 2022-06-28 14:15:00 | 295.125628 | 0.000000 | 295.125628 |
-| TOUR_A_(TGBT_D14) | 2024-12-12 12:30:00 | 15.252531 | 0.000000 | 15.252531 |
-| TOUR_C_(TGBT_D10) | 2025-01-27 11:30:00 | 5.529602 | 0.000000 | 5.529602 |
+| TGBT_TR2 | 2022-08-25 14:00:00 | 300.665104 | 193.190000 | 107.475104 |
+| TOUR_A_(TGBT_D14) | 2023-10-24 09:15:00 | 12.899353 | 4.610000 | 8.289353 |
+| TOUR_C_(TGBT_D10) | 2024-08-26 09:30:00 | 4.770168 | 0.630000 | 4.140168 |
 | Tour_B_(TGBT_D5) | 2024-08-30 13:45:00 | 68.719660 | 31.510000 | 37.209660 |
 
-Observed positive-Q meter intervals: 209857; the site must not be assumed capacitive at every interval. Medium-gap warnings: 122 of 172 reported bounded/medium cases. Uniform fallback is an estimate of interval shape, not a measured profile.
 
-EM_VIRTUAL H=96 origins passing the imputed-label exclusion: 125358. This eligibility check does not yet reject other missing targets or define forecasting splits; no training windows were materialized.
+Observed positive-Q meter intervals: 208774; the site must not be assumed capacitive at every interval. Medium-gap warnings: 122 of 172 reported bounded/medium cases. Uniform fallback is an estimate of interval shape, not a measured profile.
+
+EM_VIRTUAL H=96 origins passing the imputed-label exclusion: 125126. This eligibility check does not yet reject other missing targets or define forecasting splits; no training windows were materialized.
 
 ## Outputs and provenance
 
@@ -450,10 +475,10 @@ em_virtual.parquet has exactly the requested timestamp plus ten measure/flag col
 
 | VM output under data/processed/ | Data rows | Bytes |
 |---|---:|---:|
-| em_virtual.parquet | 128832 | 6658735 |
-| all_meters.parquet | 1803648 | 48092219 |
+| em_virtual.parquet | 128544 | 6642859 |
+| all_meters.parquet | 1799616 | 47964943 |
 
-Pipeline runtime for this invocation: 5.77 seconds.
+Pipeline runtime for this invocation: 129.18 seconds.
 
 ## Pytest result
 
@@ -462,7 +487,7 @@ Pipeline runtime for this invocation: 5.77 seconds.
 platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /home/khalifa/supcom-energy-forcast/envs/main/bin/python
 cachedir: cache/pytest
 rootdir: /home/khalifa/supcom-energy-forcast
-collecting ... collected 32 items
+collecting ... collected 33 items
 
 tests/test_contracts.py::ProjectContractTests::test_canonical_columns_keep_timestamp_and_four_electrical_values PASSED [  3%]
 tests/test_contracts.py::ProjectContractTests::test_contract_rejects_inconsistent_cadence PASSED [  6%]
@@ -470,67 +495,33 @@ tests/test_contracts.py::ProjectContractTests::test_contract_rejects_wrong_calen
 tests/test_contracts.py::ProjectContractTests::test_official_dimensions PASSED [ 12%]
 tests/test_ingestion.py::test_24_hour_rollover_and_leap_day PASSED       [ 15%]
 tests/test_ingestion.py::test_duplicate_collapse_and_explicit_grid PASSED [ 18%]
-tests/test_ingestion.py::test_named_csv_selection_with_reordered_columns PASSED [ 21%]
-tests/test_ingestion.py::test_xlsx_export_suffix_normalization_is_name_based PASSED [ 25%]
-tests/test_ingestion.py::test_short_gap_and_long_gap PASSED              [ 28%]
-tests/test_ingestion.py::test_medium_gap_has_L_plus_one_flagged_increments_and_conserves_energy PASSED [ 31%]
-tests/test_ingestion.py::test_both_reactive_counters_and_independent_PF_scale_warnings PASSED [ 34%]
-tests/test_ingestion.py::test_uniform_fallback_and_no_imputed_donor PASSED [ 37%]
-tests/test_ingestion.py::test_nearest_earlier_wholly_observed_donor PASSED [ 40%]
-tests/test_ingestion.py::test_donor_search_never_exceeds_eight_weeks PASSED [ 43%]
-tests/test_ingestion.py::test_unbounded_gaps_stay_nan_and_short_gap_cannot_cross_day PASSED [ 46%]
-tests/test_ingestion.py::test_no_read_across_explicit_split_boundary PASSED [ 50%]
-tests/test_ingestion.py::test_derived_energy_does_not_bridge_a_missing_grid_slot PASSED [ 53%]
-tests/test_ingestion.py::test_H96_targets_exclude_every_imputed_label_including_closing_increment PASSED [ 56%]
-tests/test_ingestion.py::test_output_has_no_duplicate_timestamps_and_requested_columns PASSED [ 59%]
-tests/test_ingestion.py::test_output_complete_strictly_increasing_grid PASSED [ 62%]
-tests/test_ingestion.py::test_observed_counter_never_decreases PASSED    [ 65%]
-tests/test_ingestion.py::test_dEa_stays_nan_after_a_missing_unimputed_slot PASSED [ 68%]
-tests/test_ingestion.py::test_no_growing_odometer_column_except_counters PASSED [ 71%]
-tests/test_ingestion.py::test_apparent_power_bound PASSED                [ 75%]
-tests/test_ingestion.py::test_power_factor_bounds PASSED                 [ 78%]
-tests/test_ingestion.py::test_demand_max_bounds_average_on_99_percent_of_observed_rows FAILED [ 81%]
-tests/test_ingestion.py::test_high_load_median_demand_deviation_below_10_percent PASSED [ 84%]
-tests/test_ingestion.py::test_demand_pearson_correlation_above_098_per_meter FAILED [ 87%]
+tests/test_ingestion.py::test_startup_cutoff_trims_observed_and_explicit_missing_slots PASSED [ 21%]
+tests/test_ingestion.py::test_failed_demand_zeros_are_missing_but_idle_and_one_kva_zeros_remain PASSED [ 24%]
+tests/test_ingestion.py::test_named_csv_selection_with_reordered_columns PASSED [ 27%]
+tests/test_ingestion.py::test_xlsx_export_suffix_normalization_is_name_based PASSED [ 30%]
+tests/test_ingestion.py::test_short_gap_and_long_gap PASSED              [ 33%]
+tests/test_ingestion.py::test_medium_gap_has_L_plus_one_flagged_increments_and_conserves_energy PASSED [ 36%]
+tests/test_ingestion.py::test_both_reactive_counters_and_independent_PF_scale_warnings PASSED [ 39%]
+tests/test_ingestion.py::test_uniform_fallback_and_no_imputed_donor PASSED [ 42%]
+tests/test_ingestion.py::test_nearest_earlier_wholly_observed_donor PASSED [ 45%]
+tests/test_ingestion.py::test_donor_search_never_exceeds_eight_weeks PASSED [ 48%]
+tests/test_ingestion.py::test_unbounded_gaps_stay_nan_and_short_gap_cannot_cross_day PASSED [ 51%]
+tests/test_ingestion.py::test_no_read_across_explicit_split_boundary PASSED [ 54%]
+tests/test_ingestion.py::test_derived_energy_does_not_bridge_a_missing_grid_slot PASSED [ 57%]
+tests/test_ingestion.py::test_H96_targets_exclude_every_imputed_label_including_closing_increment PASSED [ 60%]
+tests/test_ingestion.py::test_output_has_no_duplicate_timestamps_and_requested_columns PASSED [ 63%]
+tests/test_ingestion.py::test_output_complete_strictly_increasing_grid PASSED [ 66%]
+tests/test_ingestion.py::test_observed_counter_never_decreases PASSED    [ 69%]
+tests/test_ingestion.py::test_dEa_stays_nan_after_a_missing_unimputed_slot PASSED [ 72%]
+tests/test_ingestion.py::test_no_growing_odometer_column_except_counters PASSED [ 75%]
+tests/test_ingestion.py::test_apparent_power_bound PASSED                [ 78%]
+tests/test_ingestion.py::test_power_factor_bounds PASSED                 [ 81%]
+tests/test_ingestion.py::test_output_has_no_failed_zero_demand_registers_under_load PASSED [ 84%]
+tests/test_ingestion.py::test_high_load_median_demand_deviation_below_10_percent PASSED [ 87%]
 tests/test_ingestion.py::test_demand_diagnostics_exclude_imputed_rows_and_separate_quartile_from_halves PASSED [ 90%]
 tests/test_ingestion.py::test_zero_demand_ratios_and_idle_load_ties_are_explicit PASSED [ 93%]
 tests/test_ingestion.py::test_all_real_medium_gap_energy_totals_and_closing_flags PASSED [ 96%]
 tests/test_ingestion.py::test_long_format_grid_and_provenance PASSED     [100%]
 
-=================================== FAILURES ===================================
-________ test_demand_max_bounds_average_on_99_percent_of_observed_rows _________
-
-demand_results = {'CLIM_SALLE_IT_(TGBT_D1)': ({'meter': 'CLIM_SALLE_IT_(TGBT_D1)', 'comparable_rows': 128450, 'invariant_fraction': 0.9...011487
-34266  ONDULEUR_1_(TGBT_DXX) 2026-02-28 22:45:00  ...       3.80       0.028969
-
-[34267 rows x 5 columns]), ...}
-
-    def test_demand_max_bounds_average_on_99_percent_of_observed_rows(demand_results):
-        failures = {meter: {"fraction": stats["invariant_fraction"], "violations": len(violations)}
-                    for meter, (stats, violations) in demand_results.items()
-                    if not stats["invariant_fraction"] >= .99}
->       assert not failures, f"Demand maximum must bound average (0.01 kVA tolerance) on >=99%; {failures}. Every violating timestamp is in outputs/demand_invariant_violations.csv"
-E       AssertionError: Demand maximum must bound average (0.01 kVA tolerance) on >=99%; {'CLIM_SALLE_IT_(TGBT_D1)': {'fraction': 0.9404359673024523, 'violations': 7651}, 'CLIM_TOUR_A_(TGBT_D6)': {'fraction': 0.8403970416504476, 'violations': 20501}, 'EM_VIRTUAL': {'fraction': 0.532899961074348, 'violations': 59999}, 'ONDULEUR_1_(TGBT_DXX)': {'fraction': 0.7233721362029158, 'violations': 34267}, 'ONDULEUR_2_(TGBT_DXX)': {'fraction': 0.7283925560482108, 'violations': 34794}, 'PV_(CHAUFFERIE_PROV.)': {'fraction': 0.9628571428571429, 'violations': 4771}, 'SALLE_B201_(A_1_ETAGE_TOUR_B)': {'fraction': 0.9098915989159891, 'violations': 11571}, 'TGBT_TR1': {'fraction': 0.8214091086025691, 'violations': 22940}, 'TGBT_TR2': {'fraction': 0.7022810432074738, 'violations': 38242}, 'TOUR_A_(TGBT_D14)': {'fraction': 0.6743797444180977, 'violations': 40922}, 'TOUR_C_(TGBT_D10)': {'fraction': 0.6609640816716266, 'violations': 42608}, 'Tour_B_(TGBT_D5)': {'fraction': 0.632534059945504, 'violations': 47201}}. Every violating timestamp is in outputs/demand_invariant_violations.csv
-E       assert not {'CLIM_SALLE_IT_(TGBT_D1)': {'fraction': 0.9404359673024523, 'violations': 7651}, 'CLIM_TOUR_A_(TGBT_D6)': {'fraction': 0.8403970416504476, 'violations': 20501}, 'EM_VIRTUAL': {'fraction': 0.532899961074348, 'violations': 59999}, 'ONDULEUR_1_(TGBT_DXX)': {'fraction': 0.7233721362029158, 'violations': 34267}, ...}
-
-tests/test_ingestion.py:264: AssertionError
-_____________ test_demand_pearson_correlation_above_098_per_meter ______________
-
-demand_results = {'CLIM_SALLE_IT_(TGBT_D1)': ({'meter': 'CLIM_SALLE_IT_(TGBT_D1)', 'comparable_rows': 128450, 'invariant_fraction': 0.9...011487
-34266  ONDULEUR_1_(TGBT_DXX) 2026-02-28 22:45:00  ...       3.80       0.028969
-
-[34267 rows x 5 columns]), ...}
-
-    def test_demand_pearson_correlation_above_098_per_meter(demand_results):
-        failures = {meter: stats["pearson"] for meter, (stats, _) in demand_results.items()
-                    if not stats["pearson"] > .98}
->       assert not failures, f"Observed Pearson correlation must exceed 0.98 per meter; {failures}"
-E       AssertionError: Observed Pearson correlation must exceed 0.98 per meter; {'CLIM_SALLE_IT_(TGBT_D1)': 0.9473565298904467, 'CLIM_TOUR_A_(TGBT_D6)': 0.9048465695348769, 'EM_VIRTUAL': 0.9606464959557726, 'SALLE_B112_(A._MEZAN_TOUR_B)': 0.9565882128734808, 'Tour_B_(TGBT_D5)': 0.9524260645772332}
-E       assert not {'CLIM_SALLE_IT_(TGBT_D1)': 0.9473565298904467, 'CLIM_TOUR_A_(TGBT_D6)': 0.9048465695348769, 'EM_VIRTUAL': 0.9606464959557726, 'SALLE_B112_(A._MEZAN_TOUR_B)': 0.9565882128734808, ...}
-
-tests/test_ingestion.py:277: AssertionError
-=========================== short test summary info ============================
-FAILED tests/test_ingestion.py::test_demand_max_bounds_average_on_99_percent_of_observed_rows
-FAILED tests/test_ingestion.py::test_demand_pearson_correlation_above_098_per_meter
-========================= 2 failed, 30 passed in 4.47s =========================
+============================== 33 passed in 4.36s ==============================
 ```

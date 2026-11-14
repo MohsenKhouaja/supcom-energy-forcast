@@ -15,7 +15,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from smartgrid.data.derive import derive
+from smartgrid.data.derive import derive, clean_demand_registers
 from smartgrid.data.loader import LoadedDataset, load_dataset, meter_frame, raw_name
 from smartgrid.data.windowing import eligible_target_origins
 from smartgrid.evaluation.demand import demand_report
@@ -46,7 +46,8 @@ def load_or_resume(root, config, resume):
         return LoadedDataset(pd.read_parquet(cache/"raw_selected.parquet"), tuple(meta["meters"]),
                              meta["stats"], pd.DataFrame.from_dict(meta["coverage"], orient="index"))
     loaded = load_dataset(root, config["raw_trees"], expected_header_md5=config["csv_header_md5"],
-                          expected_meter_count=config["expected_meter_count"])
+                          expected_meter_count=config["expected_meter_count"],
+                          canonical_start=config.get("canonical_start"))
     loaded.frame.to_parquet(cache/"raw_selected.parquet", engine="pyarrow")
     (cache/"metadata.json").write_text(json.dumps({"fingerprint": fingerprint, "meters": loaded.meters,
         "stats": loaded.stats, "coverage": loaded.coverage.to_dict(orient="index")}, indent=2), encoding="utf-8")
@@ -125,15 +126,17 @@ def report(root, loaded, frames, stats, gaps, files, runtime):
         "Both reactive counters are retained: the forward counter is not assumed frozen. Net reactive anchor energy is "
         "delta(Er_pos_counter) minus delta(Er_neg_counter). Observed dEr always uses signed Q_avg * 0.25.", "",
         "## Row accounting", "", "| Item | Count |", "|---|---:|"]
-    for key in ("rows_in", "all_missing_rows_dropped", "duplicates_dropped", "unique_observed_timestamps", "grid_slots_created", "rows_out_per_meter"):
+    for key in ("rows_in", "all_missing_rows_dropped", "duplicates_dropped", "unique_observed_timestamps", "startup_observed_rows_dropped", "startup_grid_slots_dropped", "retained_observed_timestamps", "grid_slots_created", "rows_out_per_meter"):
         lines.append(f"| {key} | {loaded.stats[key]} |")
     lines += [f"| Meters | {len(loaded.meters)} |", f"| Long output rows | {len(em)*len(loaded.meters)} |", "",
-        f"Grid: {em.index[0]} through {em.index[-1]}, every 15 minutes. It starts after the entirely missing opening rows "
-        "were dropped. No leading/trailing extrapolation is performed. Duplicates use the entire raw row's non-null measurement count, "
+        f"Grid: {em.index[0]} through {em.index[-1]}, every 15 minutes. The July 1 cutoff removes "
+        f"{loaded.stats['startup_grid_slots_dropped']} grid slots, including {loaded.stats['startup_observed_rows_dropped']} observed timestamps; "
+        "the difference is explicit missing grid slots. Startup is removed before imputation and derivation. "
+        "No leading/trailing extrapolation is performed. Duplicates use the entire raw row's non-null measurement count, "
         "with stable first-row ties; the misplaced original August 2025 copies of May are deduplicated by actual timestamps.", "",
         "## Monthly observed coverage before imputation", "",
         "Counts are unique EM_VIRTUAL timestamps with at least one observed Ea_counter/P_avg/Q_avg. "
-        "Calendar expected counts include the missing opening portion of June 2022.", "",
+        "This source-inventory table includes June 2022 for provenance; June is excluded from the canonical outputs.", "",
         "| Month | Original CSV | With November XLSX | With update | Calendar expected |", "|---|---:|---:|---:|---:|"]
     for month, row in loaded.coverage.sort_index().iterrows():
         lines.append(f"| {month} | {int(row['original_csv'])} | {int(row['with_xlsx'])} | {int(row['with_update'])} | {int(row['expected_calendar_slots'])} |")
@@ -195,6 +198,20 @@ def report(root, loaded, frames, stats, gaps, files, runtime):
         "| Month | Total dEa kWh | Max P_avg kW | Max S_avg kVA | Imputed rows |", "|---|---:|---:|---:|---:|"]
     for month, group in em.groupby(em.index.to_period("M")):
         lines.append(f"| {month} | {f(group['dEa'].sum(min_count=1),3)} | {f(group['P_avg'].max(),3)} | {f(group['S_avg'].max(),3)} | {int(group['is_imputed'].sum())} |")
+    lines += ["", "## Failed-zero demand-register cleanup", "",
+        "After P/Q reconstruction, a P_dmd_max or S_dmd_max reading equal to zero is independently set to NaN "
+        "where the same row has S_avg > 1.0 kVA. Counts below cover the retained canonical grid, including flagged rows. "
+        "Idle S_avg == 0 readings remain valid zeros. This cleanup does not set is_imputed.", "",
+        "| Meter | P_dmd_max zeros to NaN | S_dmd_max zeros to NaN |", "|---|---:|---:|"]
+    for meter in loaded.meters:
+        cleaned = stats[meter]["demand_zeros_to_missing"]
+        lines.append(f"| {meter} | {cleaned['P_dmd_max']} | {cleaned['S_dmd_max']} |")
+    lines += ["", "## Final target definition", "",
+        "For the H=96 future slots t+1 through t+96: Pmax = max(P_avg), Smax = max(S_avg). "
+        "Both targets are derived from the canonical interval-average channels. P_dmd_max and S_dmd_max remain "
+        "cross-check columns in the Parquets and are NEVER used as labels. The registers aggregate on different clocks "
+        "and include startup/failed reads, so ordering and correlation are EDA diagnostics, not invariants. "
+        "The high-load median-deviation <0.10 test is retained. Imputed target regions remain excluded as documented above.", ""]
     lines += ["", write_demand_diagnostics(root, frames)]
     positive_q = sum(int((meter_frame(loaded.frame, meter)["Q_avg"] > 0).sum()) for meter in loaded.meters)
     lines += ["", f"Observed positive-Q meter intervals: {positive_q}; the site must not be assumed capacitive at every interval. "
@@ -263,6 +280,10 @@ def main():
     frames, stats, gaps = {}, {}, []
     for meter in loaded.meters:
         frames[meter], stats[meter], log = impute(meter_frame(loaded.frame, meter), config["imputation"])
+        frames[meter], clean_counts = clean_demand_registers(frames[meter])
+        stats[meter]["demand_zeros_to_missing"] = clean_counts
+        for field in clean_counts:
+            stats[meter]["remaining_nan"][field] = int(frames[meter][field].isna().sum())
         gaps.extend({"meter": meter, **gap} for gap in log)
         print("IMPUTED", meter, json.dumps(stats[meter]), flush=True)
     files = write_outputs(root, loaded, frames, gaps)

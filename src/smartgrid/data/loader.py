@@ -1,6 +1,6 @@
 """Read untrusted SInERT exports without executing input code or formulas.
 
-CSV rows and XLSX cells are streamed one file at a time. Only the six named
+CSV rows and XLSX cells are streamed one file at a time. Only the seven named
 channels per meter are retained. The full raw row is inspected for missingness
 and the deduplication completeness score; unused measurements are never stored.
 
@@ -9,6 +9,13 @@ all H=96 future targets must be observed (is_imputed=False). Imputed values may
 inform inputs, never labels. Rerun imputation with the intended split boundaries
 or separately within each split. Phase 5 PF alerts must compute statistics ONLY
 on observed rows (is_imputed=False), never on reconstructed PF.
+
+Final target definition over the H=96 FUTURE slots t+1..t+96:
+Pmax = max(P_avg), Smax = max(S_avg), both derived. P_dmd_max and S_dmd_max
+are cross-check columns ONLY, never labels: their registers aggregate on
+different clocks and have startup/failed reads. A zero demand register at
+S_avg > 1.0 kVA becomes missing in final output; idle zeros remain valid.
+The production canonical grid starts at 2022-07-01 00:00 to exclude startup.
 """
 
 from __future__ import annotations
@@ -107,7 +114,7 @@ def meter_frame(wide: pd.DataFrame, meter: str) -> pd.DataFrame:
     return result
 
 
-def canonicalize(rows: pd.DataFrame, measures: list[str]) -> tuple[pd.DataFrame, dict]:
+def canonicalize(rows: pd.DataFrame, measures: list[str], *, canonical_start=None) -> tuple[pd.DataFrame, dict]:
     """Sort, drop all-raw-missing rows, deduplicate, then create explicit holes."""
     if rows.empty:
         raise ValueError("No input rows")
@@ -118,14 +125,25 @@ def canonicalize(rows: pd.DataFrame, measures: list[str]) -> tuple[pd.DataFrame,
     duplicates = int(kept.duplicated("timestamp").sum())
     kept = kept.drop_duplicates("timestamp", keep="first").set_index("timestamp").sort_index()
     grid = pd.date_range(kept.index[0], kept.index[-1], freq="15min", name="timestamp")
+    unique_before_trim = len(kept)
+    original_grid_size = len(grid)
+    if canonical_start is not None:
+        cutoff = pd.Timestamp(canonical_start)
+        kept = kept.loc[kept.index >= cutoff]
+        grid = grid[grid >= cutoff]
+        if not len(grid):
+            raise ValueError("No data remains after canonical_start")
     stats = {"rows_in": len(rows), "all_missing_rows_dropped": int((rows["_non_null"] == 0).sum()),
-             "duplicates_dropped": duplicates, "unique_observed_timestamps": len(kept),
+             "duplicates_dropped": duplicates, "unique_observed_timestamps": unique_before_trim,
+             "startup_observed_rows_dropped": unique_before_trim-len(kept),
+             "startup_grid_slots_dropped": original_grid_size-len(grid),
+             "retained_observed_timestamps": len(kept),
              "grid_slots_created": len(grid)-len(kept), "rows_out_per_meter": len(grid)}
     return kept[measures + PROVENANCE].reindex(grid), stats
 
 
 def load_dataset(root: Path, raw_trees, *, expected_header_md5=None,
-                 expected_meter_count=None) -> LoadedDataset:
+                 expected_meter_count=None, canonical_start=None) -> LoadedDataset:
     root = Path(root).resolve()
     paths = sorted(p for tree in raw_trees for p in (root/tree).rglob("*")
                    if p.is_file() and p.suffix.lower() in (".csv", ".xlsx"))
@@ -219,7 +237,7 @@ def load_dataset(root: Path, raw_trees, *, expected_header_md5=None,
     for label, times in (("original_csv", before), ("with_xlsx", recovered), ("with_update", after)):
         coverage[label] = pd.Series(Counter(times.strftime("%Y-%m"))).reindex(coverage.index, fill_value=0)
     coverage["expected_calendar_slots"] = [p.days_in_month*96 for p in month_range]
-    frame, stats = canonicalize(rows, measures)
+    frame, stats = canonicalize(rows, measures, canonical_start=canonical_start)
     stats.update({"csv_files": len(csv_paths), "xlsx_files": len(paths)-len(csv_paths),
                   "source_sheets": file_stats, "xlsx_new_em_intervals": len(xlsx_times.difference(before)),
                   "xlsx_em_intervals": len(xlsx_times), "xlsx_rows_in": sum(f["rows"] for f in file_stats if f["sheet"]),

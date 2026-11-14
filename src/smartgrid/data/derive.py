@@ -4,6 +4,21 @@ import numpy as np
 import pandas as pd
 
 
+def clean_demand_registers(frame: pd.DataFrame):
+    """Mark failed zero reads missing at S_avg>1 kVA; retain valid idle zeros.
+
+    This is missing-read cleanup, not imputation: is_imputed is unchanged.
+    Apply after P/Q reconstruction so the rule uses the final same-row S_avg.
+    """
+    result = frame.copy()
+    counts = {}
+    for column in ("P_dmd_max", "S_dmd_max"):
+        failed_read = result[column].eq(0) & result["S_avg"].gt(1.0)
+        counts[column] = int(failed_read.sum())
+        result.loc[failed_read, column] = np.nan
+    return result, counts
+
+
 def derive(frame: pd.DataFrame) -> pd.DataFrame:
     """diff reads only the current and previous grid slot, including their NaNs."""
     result = frame.copy()

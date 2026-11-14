@@ -1,5 +1,6 @@
 {
   "cadence_minutes": 15,
+  "canonical_start": "2022-07-01 00:00:00",
   "expected_meter_count": 14,
   "csv_header_md5": "ae7740e6f10914f7aa4b2fa665f0baa0",
   "raw_trees": ["data/raw/sinert", "data/raw/sinert_update"],
