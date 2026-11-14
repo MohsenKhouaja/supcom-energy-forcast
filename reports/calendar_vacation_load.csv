@@ -1,0 +1,18 @@
+academic_year,period,status,vacation_weekday_mean_kW,vacation_observed_rows,vacation_excluded_imputed,vacation_other_missing,surrounding_term_weekday_mean_kW,surrounding_term_observed_rows,surrounding_term_excluded_imputed,surrounding_term_other_missing
+2022/2023,vacances hiver,"RECONSTRUCTED, not official",26.32185416666667,960,0,0,33.55552083333333,1920,0,0
+2022/2023,vacances printemps,"RECONSTRUCTED, not official",27.347520833333338,480,0,0,24.497034277198214,1342,2,0
+2022/2023,vacances Aid Al Fitr,"RECONSTRUCTED, not official",23.745520833333334,480,0,0,34.93279761904761,1344,0,0
+2022/2023,summer closure,"RECONSTRUCTED, not official",72.33349642660802,3638,10,0,87.46300130208334,1536,0,0
+2023/2024,vacances hiver,"RECONSTRUCTED, not official",36.91317708333334,960,0,0,42.07374479166666,1920,0,0
+2023/2024,vacances printemps,"RECONSTRUCTED, not official",32.57947916666667,480,0,0,32.39274553571428,1344,0,0
+2023/2024,vacances Aid Al Fitr,"RECONSTRUCTED, not official",27.502979166666666,480,0,0,36.42523611111111,1440,0,0
+2023/2024,summer closure,"RECONSTRUCTED, not official",83.56055314219519,3453,99,0,113.123484375,1920,0,0
+2024/2025,vacances hiver,"RECONSTRUCTED, not official",33.21155857740585,956,4,0,46.28019230769232,1820,4,0
+2024/2025,vacances printemps,"RECONSTRUCTED, not official",27.541541666666667,480,0,0,38.09964743589744,1248,0,0
+2024/2025,vacances Aid Al Fitr,"RECONSTRUCTED, not official",31.918437499999996,480,0,0,34.21767628205128,1248,0,0
+2024/2025,summer closure,"RECONSTRUCTED, not official",96.73419924703157,3453,3,0,135.23827661909988,1822,2,0
+2025/2026,vacances hiver,"RECONSTRUCTED, not official",38.26647916666668,960,0,0,47.84017543859648,1824,0,0
+2025/2026,vacances printemps,"RECONSTRUCTED, not official",,0,0,0,,0,0,0
+2025/2026,vacances Aid Al Fitr,"RECONSTRUCTED, not official",,0,0,0,,0,0,0
+2025/2026,summer closure,"RECONSTRUCTED, not official",,0,0,0,,0,0,0
+2021/2022,summer closure (initial-record context),"RECONSTRUCTED, not official",114.14145139080142,3631,17,0,124.43100694444443,1440,0,0

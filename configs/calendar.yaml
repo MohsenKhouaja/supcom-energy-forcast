@@ -1,0 +1,16 @@
+{
+  "status": "RECONSTRUCTED, not official",
+  "academic_year_starts": [2022, 2023, 2024, 2025],
+  "rentree": "09-01",
+  "winter_vacation": {
+    "anchor": "12-25",
+    "weeks_before": 0,
+    "weeks_after": 1
+  },
+  "exam_weeks_after_winter": 2,
+  "spring_iso_week": 14,
+  "fin_annee": "07-10",
+  "summer_closure": {"start": "07-11", "end": "08-31"},
+  "country": "TN",
+  "holiday_years": [2022, 2023, 2024, 2025, 2026]
+}
