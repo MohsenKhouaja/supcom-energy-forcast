@@ -1,0 +1,4 @@
+split,start,end_exclusive,grid_rows,observed_complete_rows,excluded_imputed,missing_observed,eligible_origins_prior_context,eligible_origins_strict_context,history_unavailable_origins,target_boundary_origins,target_unobserved_origins
+train,2022-07-01,2025-03-01,93504,93169,334,1,90027,90027,672,96,2709
+val,2025-03-01,2025-09-01,17664,17659,5,0,17373,16702,0,96,195
+test,2025-09-01,2026-03-01,17376,17338,38,0,16862,16191,0,96,418

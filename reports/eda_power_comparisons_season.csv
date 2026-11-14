@@ -1,0 +1,5 @@
+group,mean_kW,median_kW,observed_intervals,excluded_imputed,missing_observed
+Autumn,73.82727806751103,67.89,34898,46,0
+Spring,37.64145471076259,33.71,26397,99,0
+Summer,87.00333364318027,85.245,32274,174,0
+Winter,39.90530088444419,37.89,34598,58,0
