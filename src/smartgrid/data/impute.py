@@ -73,7 +73,9 @@ def impute(frame: pd.DataFrame, policy: dict):
     boundaries = pd.DatetimeIndex(pd.to_datetime(policy.get("split_boundaries", [])))
     if boundaries.tz is not None:
         raise ValueError("Split boundaries must be naive timestamps")
-    partitions = np.searchsorted(boundaries.sort_values().asi8, index.asi8, side="right")
+    # Pandas can store one index in microseconds and the other in nanoseconds.
+    partitions = np.searchsorted(boundaries.sort_values().as_unit("ns").asi8,
+                                 index.as_unit("ns").asi8, side="right")
     existing_flags = frame.get("is_imputed", pd.Series(False, index=index)).fillna(True).to_numpy(dtype=bool)
     flags = existing_flags.copy()
     methods = Counter()

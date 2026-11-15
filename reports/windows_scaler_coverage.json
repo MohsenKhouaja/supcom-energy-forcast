@@ -1,0 +1,8 @@
+{
+  "train_range_rows": 76128,
+  "fitted_rows": 76127,
+  "excluded_rows": 1,
+  "excluded_pct": 0.0013135771332492645,
+  "excluded_nonfinite_electrical": 1,
+  "excluded_finite_not_touched": 0
+}

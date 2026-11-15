@@ -1,7 +1,5 @@
 # SInERT ingestion
 
-Validation status: pytest exit code 0. All requested tests passed.
-
 VM project: `/home/khalifa/supcom-energy-forcast`. CPU-only; no modeling, feature engineering or notebooks.
 
 ## Sources and schema
@@ -92,7 +90,7 @@ For 5–96 missing slots there are L+1 increments between the observed anchors. 
 
 Independent k/k_q preserve the two gap totals but generally change PF. Anchoring fixes total energy across the gap; allocation between months remains estimated if the anchors straddle a month boundary. Warnings do not alter observations or suppress tests.
 
-Right counter anchors are lookahead within an analysis partition. No imputation or donor crosses configured split boundaries. No train/test split has been chosen here: before modeling, rerun with actual boundaries or per split. The windowing eligibility function excludes any origin whose next H=96 labels contain an imputed row, including the reconstructed closing increment. Imputed data may inform inputs, never targets. Phase 5 PF alerts must use is_imputed=False rows only. Monthly observed PF ranges are used only for diagnostic warnings, never to choose a fill.
+Right counter anchors are lookahead within an analysis partition. No imputation or donor crosses configured split boundaries. Imputation was rerun with configs/splits.yaml. Enforced partition boundaries: 2022-07-01 00:00:00, 2024-09-01 00:00:00, 2025-06-01 00:00:00, 2026-03-01 00:00:00. Anchors and donors stay in the same partition. The windowing eligibility function excludes any origin whose next H=96 labels contain an imputed row, including the reconstructed closing increment. Imputed data may inform inputs, never targets. Phase 5 PF alerts must use is_imputed=False rows only. Monthly observed PF ranges are used only for diagnostic warnings, never to choose a fill.
 
 is_imputed is a row boolean: true if any electrical value was filled/reconstructed or dEa depends on a filled previous counter. Per-method counts below include reconstructed closing P/Q readings, not only previously NaN cells.
 
@@ -478,50 +476,23 @@ em_virtual.parquet has exactly the requested timestamp plus ten measure/flag col
 | em_virtual.parquet | 128544 | 6642859 |
 | all_meters.parquet | 1799616 | 47964943 |
 
-Pipeline runtime for this invocation: 129.18 seconds.
+Pipeline runtime for this invocation: 138.14 seconds.
 
-## Pytest result
+## Validation after split-bounded ingestion
 
 ```text
 ============================= test session starts ==============================
-platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /home/khalifa/supcom-energy-forcast/envs/main/bin/python
-cachedir: cache/pytest
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
 rootdir: /home/khalifa/supcom-energy-forcast
-collecting ... collected 33 items
+plugins: platformdirs-4.14.5, anyio-4.16.0
+collected 77 items
 
-tests/test_contracts.py::ProjectContractTests::test_canonical_columns_keep_timestamp_and_four_electrical_values PASSED [  3%]
-tests/test_contracts.py::ProjectContractTests::test_contract_rejects_inconsistent_cadence PASSED [  6%]
-tests/test_contracts.py::ProjectContractTests::test_contract_rejects_wrong_calendar_feature_count PASSED [  9%]
-tests/test_contracts.py::ProjectContractTests::test_official_dimensions PASSED [ 12%]
-tests/test_ingestion.py::test_24_hour_rollover_and_leap_day PASSED       [ 15%]
-tests/test_ingestion.py::test_duplicate_collapse_and_explicit_grid PASSED [ 18%]
-tests/test_ingestion.py::test_startup_cutoff_trims_observed_and_explicit_missing_slots PASSED [ 21%]
-tests/test_ingestion.py::test_failed_demand_zeros_are_missing_but_idle_and_one_kva_zeros_remain PASSED [ 24%]
-tests/test_ingestion.py::test_named_csv_selection_with_reordered_columns PASSED [ 27%]
-tests/test_ingestion.py::test_xlsx_export_suffix_normalization_is_name_based PASSED [ 30%]
-tests/test_ingestion.py::test_short_gap_and_long_gap PASSED              [ 33%]
-tests/test_ingestion.py::test_medium_gap_has_L_plus_one_flagged_increments_and_conserves_energy PASSED [ 36%]
-tests/test_ingestion.py::test_both_reactive_counters_and_independent_PF_scale_warnings PASSED [ 39%]
-tests/test_ingestion.py::test_uniform_fallback_and_no_imputed_donor PASSED [ 42%]
-tests/test_ingestion.py::test_nearest_earlier_wholly_observed_donor PASSED [ 45%]
-tests/test_ingestion.py::test_donor_search_never_exceeds_eight_weeks PASSED [ 48%]
-tests/test_ingestion.py::test_unbounded_gaps_stay_nan_and_short_gap_cannot_cross_day PASSED [ 51%]
-tests/test_ingestion.py::test_no_read_across_explicit_split_boundary PASSED [ 54%]
-tests/test_ingestion.py::test_derived_energy_does_not_bridge_a_missing_grid_slot PASSED [ 57%]
-tests/test_ingestion.py::test_H96_targets_exclude_every_imputed_label_including_closing_increment PASSED [ 60%]
-tests/test_ingestion.py::test_output_has_no_duplicate_timestamps_and_requested_columns PASSED [ 63%]
-tests/test_ingestion.py::test_output_complete_strictly_increasing_grid PASSED [ 66%]
-tests/test_ingestion.py::test_observed_counter_never_decreases PASSED    [ 69%]
-tests/test_ingestion.py::test_dEa_stays_nan_after_a_missing_unimputed_slot PASSED [ 72%]
-tests/test_ingestion.py::test_no_growing_odometer_column_except_counters PASSED [ 75%]
-tests/test_ingestion.py::test_apparent_power_bound PASSED                [ 78%]
-tests/test_ingestion.py::test_power_factor_bounds PASSED                 [ 81%]
-tests/test_ingestion.py::test_output_has_no_failed_zero_demand_registers_under_load PASSED [ 84%]
-tests/test_ingestion.py::test_high_load_median_demand_deviation_below_10_percent PASSED [ 87%]
-tests/test_ingestion.py::test_demand_diagnostics_exclude_imputed_rows_and_separate_quartile_from_halves PASSED [ 90%]
-tests/test_ingestion.py::test_zero_demand_ratios_and_idle_load_ties_are_explicit PASSED [ 93%]
-tests/test_ingestion.py::test_all_real_medium_gap_energy_totals_and_closing_flags PASSED [ 96%]
-tests/test_ingestion.py::test_long_format_grid_and_provenance PASSED     [100%]
+tests/test_behaviour.py ........................                         [ 31%]
+tests/test_contracts.py ....                                             [ 36%]
+tests/test_ingestion.py .............................                    [ 74%]
+tests/test_windows.py ...................s                               [100%]
 
-============================== 33 passed in 4.36s ==============================
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_windows.py:230: Torch not installed; only holidays/scikit-learn additions authorized
+======================== 76 passed, 1 skipped in 7.65s =========================
 ```

@@ -43,3 +43,14 @@ experiments/runs/
 # OS files
 .DS_Store
 Thumbs.db
+
+# VM working directories and archives
+/data/
+/envs/
+/cache/
+/outputs/
+/logs/
+*.zip
+
+# Versioned dataset audit summaries
+!reports/*.csv

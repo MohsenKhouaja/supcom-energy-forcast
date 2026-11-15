@@ -239,6 +239,7 @@ def main():
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--record-validation", action="store_true")
     parser.add_argument("--refresh-demand-diagnostics", action="store_true")
+    parser.add_argument("--splits", type=Path, help="JSON-syntax YAML split configuration; enforce all partition boundaries")
     args = parser.parse_args()
     started = time.monotonic()
     root = args.root.resolve()
@@ -271,6 +272,10 @@ def main():
         print(statement, flush=True)
         return
     config = json.loads((root/"configs/data.yaml").read_text(encoding="utf-8"))
+    if args.splits:
+        from smartgrid.data.windows import split_ranges
+        ranges = split_ranges(json.loads((root/args.splits).read_text(encoding="utf-8")))
+        config["imputation"]["split_boundaries"] = sorted({str(point) for bounds in ranges.values() for point in bounds})
     loaded = load_or_resume(root, config, args.resume)
     print(json.dumps({k: v for k, v in loaded.stats.items() if k != "source_sheets"}, indent=2), flush=True)
     if args.load_only:
@@ -288,6 +293,13 @@ def main():
         print("IMPUTED", meter, json.dumps(stats[meter]), flush=True)
     files = write_outputs(root, loaded, frames, gaps)
     report(root, loaded, frames, stats, gaps, files, time.monotonic()-started)
+    if args.splits:
+        path = root/"reports/INGESTION.md"
+        body = path.read_text(encoding="utf-8").replace(
+            "No train/test split has been chosen here: before modeling, rerun with actual boundaries or per split.",
+            "Imputation was rerun with configs/splits.yaml. Enforced partition boundaries: "
+            + ", ".join(config["imputation"]["split_boundaries"]) + ". Anchors and donors stay in the same partition.")
+        path.write_text(body, encoding="utf-8")
     print("OUTPUTS", json.dumps(files), flush=True)
     print("RUNTIME_SECONDS", time.monotonic()-started, flush=True)
 
