@@ -1,0 +1,107 @@
+{
+  "family": "XGBoost",
+  "training": {
+    "eligible_train_origins": 73640,
+    "usable_train_origins": 73639,
+    "sampled_origins": 10520,
+    "rows": 1009920,
+    "stride": 7,
+    "half_sample": false,
+    "sampled_origin_indices_sha256": "3e03805bbbad42b9b1c52c74966186a438721021574f12fc43457681a38f1768",
+    "quarter_hour_counts": {
+      "0": 2630,
+      "15": 2631,
+      "30": 2630,
+      "45": 2629
+    }
+  },
+  "selection": [
+    {
+      "channel": "dEa",
+      "parameters": {
+        "max_depth": 4
+      },
+      "validation_wape_pct": 15.55940298306795,
+      "candidate_fit_seconds": 18.331989896018058,
+      "validation_seconds": 2.326900186948478,
+      "n_parameters": 9186
+    },
+    {
+      "channel": "dEa",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 16.22402724825001,
+      "candidate_fit_seconds": 27.939723999006674,
+      "validation_seconds": 4.204582400852814,
+      "n_parameters": 143544
+    },
+    {
+      "channel": "dEr",
+      "parameters": {
+        "max_depth": 4
+      },
+      "validation_wape_pct": 32.00582246950213,
+      "candidate_fit_seconds": 16.9135436010547,
+      "validation_seconds": 2.3780792250763625,
+      "n_parameters": 9189
+    },
+    {
+      "channel": "dEr",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 37.114239416581356,
+      "candidate_fit_seconds": 26.775803002994508,
+      "validation_seconds": 4.153191918041557,
+      "n_parameters": 140913
+    },
+    {
+      "channel": "P_avg",
+      "parameters": {
+        "max_depth": 4
+      },
+      "validation_wape_pct": 15.226473497553632,
+      "candidate_fit_seconds": 16.940277185989544,
+      "validation_seconds": 2.330668957903981,
+      "n_parameters": 9192
+    },
+    {
+      "channel": "P_avg",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 16.000657676236855,
+      "candidate_fit_seconds": 28.15371606196277,
+      "validation_seconds": 4.259560239035636,
+      "n_parameters": 142662
+    },
+    {
+      "channel": "S_avg",
+      "parameters": {
+        "max_depth": 4
+      },
+      "validation_wape_pct": 15.693356623023055,
+      "candidate_fit_seconds": 16.683915917994455,
+      "validation_seconds": 2.352650549961254,
+      "n_parameters": 9186
+    },
+    {
+      "channel": "S_avg",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 15.753846743612904,
+      "candidate_fit_seconds": 26.951478495961055,
+      "validation_seconds": 4.09545658598654,
+      "n_parameters": 142155
+    }
+  ],
+  "fit_seconds": 207.97024629591033,
+  "n_parameters": 36753,
+  "half_sample": false,
+  "status": "completed",
+  "peak_rss_mb": 1840.185344,
+  "artifact_sha256": "3ee45be0eb320ee5f6367bc8a62b14301497836318434b132495389a5b86de88",
+  "artifact_path": "outputs/forecast_ml/XGBoost.pkl"
+}

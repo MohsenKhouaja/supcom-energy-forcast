@@ -1,0 +1,82 @@
+{
+  "family": "RandomForest",
+  "training": {
+    "eligible_train_origins": 73640,
+    "usable_train_origins": 73639,
+    "sampled_origins": 5260,
+    "rows": 504960,
+    "stride": 7,
+    "half_sample": true,
+    "sampled_origin_indices_sha256": "1c448f352d1834e67d4e56a474d1d4045651fe4f3c2c2be0a8b2cbc948068e8a",
+    "quarter_hour_counts": {
+      "0": 1314,
+      "15": 1316,
+      "30": 1316,
+      "45": 1314
+    }
+  },
+  "selection": [
+    {
+      "channel": "dEa",
+      "parameters": {
+        "max_depth": 12
+      },
+      "validation_wape_pct": 15.34221016545623,
+      "candidate_fit_seconds": 383.59845708985813,
+      "validation_seconds": 9.552240492077544,
+      "n_parameters": 1707140,
+      "depth_shared_from_dEa": false
+    },
+    {
+      "channel": "dEa",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 14.903329325521813,
+      "candidate_fit_seconds": 279.5843025390059,
+      "validation_seconds": 7.837583870859817,
+      "n_parameters": 151043,
+      "depth_shared_from_dEa": false
+    },
+    {
+      "channel": "dEr",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 32.223885550701326,
+      "candidate_fit_seconds": 268.5418278798461,
+      "validation_seconds": 7.788423658115789,
+      "n_parameters": 151808,
+      "depth_shared_from_dEa": true
+    },
+    {
+      "channel": "P_avg",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 14.947227402910165,
+      "candidate_fit_seconds": 279.4463857759256,
+      "validation_seconds": 7.907549868104979,
+      "n_parameters": 151157,
+      "depth_shared_from_dEa": true
+    },
+    {
+      "channel": "S_avg",
+      "parameters": {
+        "max_depth": 8
+      },
+      "validation_wape_pct": 14.493172643369935,
+      "candidate_fit_seconds": 278.2785747980233,
+      "validation_seconds": 7.902174392947927,
+      "n_parameters": 151616,
+      "depth_shared_from_dEa": true
+    }
+  ],
+  "fit_seconds": 1531.2331677640323,
+  "n_parameters": 605624,
+  "half_sample": true,
+  "status": "completed",
+  "peak_rss_mb": 1690.980352,
+  "artifact_sha256": "67f84968875e65e70095ccbddf1431c937df202502ec700e67c1a31fff0d2356",
+  "artifact_path": "outputs/forecast_ml/RandomForest.pkl"
+}

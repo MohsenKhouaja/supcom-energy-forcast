@@ -1,0 +1,4 @@
+model,status,training_rows,sampled_origins,base_origin_stride,half_sample,fit_seconds_all_attempts,n_parameters,sample_sufficiency
+RandomForest,completed,504960,5260,7,True,4231.627710742177,605624,RF dEa full/half comparisons; no four-channel sufficiency proof
+XGBoost,completed,1009920,10520,7,False,207.97024629591033,36753,no benefit from more rows for fixed depth 4
+SVR,did not converge within budget,20000,209,7,False,1800.2508016489446,0,not established; computational cap only
