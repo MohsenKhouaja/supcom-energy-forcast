@@ -30,7 +30,7 @@ data/processed/*
 !data/processed/.gitkeep
 artifacts/
 checkpoints/
-models/
+/models/
 experiments/runs/
 
 # Source documents may contain institutional/account information.
