@@ -1,0 +1,24 @@
+[
+  {
+    "split": "val",
+    "fit_seconds": 1800.2508016489446,
+    "predict_seconds": null,
+    "peak_rss_mb": 2287.546368,
+    "n_origins": 25124,
+    "n_scored_windows": 0,
+    "n_excluded_windows": 25124,
+    "n_parameters": 0,
+    "status": "did not converge within budget"
+  },
+  {
+    "split": "test",
+    "fit_seconds": 1800.2508016489446,
+    "predict_seconds": null,
+    "peak_rss_mb": 2287.546368,
+    "n_origins": 25500,
+    "n_scored_windows": 0,
+    "n_excluded_windows": 25500,
+    "n_parameters": 0,
+    "status": "did not converge within budget"
+  }
+]

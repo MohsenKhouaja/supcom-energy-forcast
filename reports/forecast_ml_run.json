@@ -1,0 +1,275 @@
+{
+  "run_id": "20261115T100324Z_99daa666",
+  "started_utc": "2026-11-15T21:15:02.856709+00:00",
+  "git_commit": "3a0de08",
+  "config": {
+    "training_origin_stride": 7,
+    "random_seed": 2026,
+    "rf_fit_budget_seconds": 2700,
+    "svr_budget_seconds": 1800,
+    "svr_training_rows": 20000,
+    "rf": {
+      "n_estimators": 200,
+      "max_depth_grid": [
+        12,
+        8
+      ],
+      "max_features": 0.5,
+      "min_samples_leaf": 4,
+      "n_jobs": 2
+    },
+    "xgb": {
+      "n_estimators": 200,
+      "max_depth_grid": [
+        4,
+        8
+      ],
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "tree_method": "hist",
+      "device": "cpu",
+      "n_jobs": 2
+    },
+    "svr": {
+      "kernel": "rbf",
+      "C_grid": [
+        1.0,
+        10.0
+      ],
+      "epsilon": 0.1,
+      "gamma": "scale",
+      "cache_size": 512
+    },
+    "learning_curve": {
+      "requested_rows": [
+        100000,
+        250000,
+        500000
+      ],
+      "max_depth": 4,
+      "flat_wape_threshold_percentage_points": 0.5
+    }
+  },
+  "attempts": [
+    {
+      "model": "XGBoost",
+      "phase": "train-worker",
+      "attempt": "full",
+      "elapsed_seconds": 210.03586974390782,
+      "budget_seconds": null,
+      "timed_out": false,
+      "exit_code": 0,
+      "peak_rss_mb": 1840.185344,
+      "last_progress": {
+        "utc": "2026-11-15T21:18:32.670477+00:00",
+        "phase": "saved",
+        "fit_seconds": 207.97024629591033,
+        "n_parameters": 36753
+      }
+    },
+    {
+      "model": "RandomForest",
+      "phase": "train-worker",
+      "attempt": "full",
+      "elapsed_seconds": 2700.394542978145,
+      "budget_seconds": 2700,
+      "timed_out": true,
+      "exit_code": -9,
+      "peak_rss_mb": 1841.93024,
+      "last_progress": {
+        "utc": "2026-11-15T21:57:35.066177+00:00",
+        "model": "RandomForest",
+        "phase": "candidate_fit",
+        "channel": "dEr",
+        "parameters": {
+          "max_depth": 8
+        },
+        "training_rows": 1009920
+      }
+    },
+    {
+      "model": "RandomForest",
+      "phase": "train-worker",
+      "attempt": "half",
+      "elapsed_seconds": 1534.2194294310175,
+      "budget_seconds": 2700,
+      "timed_out": false,
+      "exit_code": 0,
+      "peak_rss_mb": 1690.980352,
+      "last_progress": {
+        "utc": "2026-11-15T22:29:06.348256+00:00",
+        "phase": "saved",
+        "fit_seconds": 1531.2331677640323,
+        "n_parameters": 605624
+      }
+    },
+    {
+      "model": "SVR",
+      "phase": "train-worker",
+      "attempt": "full",
+      "elapsed_seconds": 1800.2508016489446,
+      "budget_seconds": 1800,
+      "timed_out": true,
+      "exit_code": -9,
+      "peak_rss_mb": 2287.546368,
+      "last_progress": {
+        "utc": "2026-11-15T22:52:34.300394+00:00",
+        "model": "SVR",
+        "training_rows": 20000,
+        "sampled_origins": 209,
+        "phase": "candidate_validation",
+        "channel": "dEa",
+        "parameters": {
+          "C": 10.0
+        },
+        "candidate_fit_seconds": 12.47807742189616,
+        "candidate_parameters": 596051
+      }
+    }
+  ],
+  "models": {
+    "XGBoost": {
+      "status": "completed",
+      "fit_seconds": 207.97024629591033,
+      "n_parameters": 36753
+    },
+    "RandomForest": {
+      "status": "completed",
+      "fit_seconds": 1531.2331677640323,
+      "n_parameters": 605624
+    },
+    "SVR": {
+      "status": "did not converge within budget",
+      "fit_seconds": 1800.2508016489446,
+      "n_parameters": 0
+    }
+  },
+  "selection_complete_utc": "2026-11-15T22:59:07.762157+00:00",
+  "evaluation_workers": [
+    {
+      "model": "XGBoost",
+      "phase": "eval-worker",
+      "attempt": "full",
+      "elapsed_seconds": 34.00792063586414,
+      "budget_seconds": null,
+      "timed_out": false,
+      "exit_code": 0,
+      "peak_rss_mb": 1571.49184,
+      "last_progress": {
+        "utc": "2026-11-15T22:59:54.058703+00:00",
+        "phase": "split_scored",
+        "split": "test",
+        "fit_seconds": 207.97024629591033,
+        "predict_seconds": 9.895415104925632,
+        "peak_rss_mb": 1840.185344,
+        "n_origins": 25500,
+        "n_scored_windows": 25500,
+        "n_excluded_windows": 0,
+        "n_parameters": 36753,
+        "status": "completed"
+      }
+    },
+    {
+      "model": "RandomForest",
+      "phase": "eval-worker",
+      "attempt": "full",
+      "elapsed_seconds": 118.14583369717002,
+      "budget_seconds": null,
+      "timed_out": false,
+      "exit_code": 0,
+      "peak_rss_mb": 1598.554112,
+      "last_progress": {
+        "utc": "2026-11-15T23:01:51.561886+00:00",
+        "phase": "split_scored",
+        "split": "test",
+        "fit_seconds": 4231.627710742177,
+        "predict_seconds": 51.26894213096239,
+        "peak_rss_mb": 1841.93024,
+        "n_origins": 25500,
+        "n_scored_windows": 25500,
+        "n_excluded_windows": 0,
+        "n_parameters": 605624,
+        "status": "completed"
+      }
+    },
+    {
+      "model": "SVR",
+      "phase": "eval-worker",
+      "attempt": "full",
+      "elapsed_seconds": 7.0032959510572255,
+      "budget_seconds": null,
+      "timed_out": false,
+      "exit_code": 0,
+      "peak_rss_mb": 1452.019712,
+      "last_progress": {
+        "utc": "2026-11-15T23:01:59.036555+00:00",
+        "phase": "split_scored",
+        "split": "test",
+        "fit_seconds": 1800.2508016489446,
+        "predict_seconds": null,
+        "peak_rss_mb": 2287.546368,
+        "n_origins": 25500,
+        "n_scored_windows": 0,
+        "n_excluded_windows": 25500,
+        "n_parameters": 0,
+        "status": "did not converge within budget"
+      }
+    }
+  ],
+  "processed_inputs": {
+    "data/processed/em_virtual.parquet": "6c45c14bcab15a45bf8ebe2f88329de121e4e137774fe8f316bb6f7dd6b05bbe",
+    "data/processed/all_meters.parquet": "e3f44ae7b5170bb9bab158c51a3d24054ef974cc7883a4c29d280949d748033e",
+    "data/processed/features.npy": "732d734a0dd0be7435c1b03e159f3636e1a350e8035e79c9b5eb6b681d528856",
+    "data/processed/features.json": "aa74ce3afa5ba2917e438e049de0f21e52af2b2f596c450af8e6d206b91dcd50",
+    "data/processed/scaler.json": "cbd34d6eaeff8b71ffb1e77df8406f6d6ec2d362b7c039a76b7ea11ad05e85a5",
+    "data/processed/train_origins.parquet": "a9371d48206af81100d0e6a24088b5c2bf74f6a7723601e45924171b6033d351",
+    "data/processed/val_origins.parquet": "3e8e7a01132b2e943b38788b296f908b1ebbf6ae4cafc7d00aa6b7faa4e17562",
+    "data/processed/test_origins.parquet": "5e6729b342bc0c10ae9fd7d7965c4243f6e76ec4db65f367dea100a1005e5557"
+  },
+  "inputs_unchanged": true,
+  "completed_utc": "2026-11-15T23:01:59.727694+00:00",
+  "source_files": {
+    "configs/calendar.yaml": "be6f7f87920375c8599182ab9c1dee132e0e6082ab5da27dcdcc003d19632d0f",
+    "configs/data.yaml": "70bb88c1948c6af7ce82335a221eea7cdaa6220df06152e4338408d9aa42d5bc",
+    "configs/forecast_ml.yaml": "62c324ba22e66b536d9ad31290a1c5668497c01c76e4535d5dac7f7280f813f2",
+    "configs/splits.yaml": "de8b413e6e39fcf6eb45d12b6df7f378ace49844c665b3369f191a62317bd85b",
+    "scripts/audit_dataset.py": "9e73f26041fa4f98997d82789bfc867a17d4c41c553de5eba8d98acf365cd37a",
+    "scripts/build_windows.py": "e1064de8cc35cc518c7c38fb6f8cd515005072b7acc5d8eafc5be0ab50c972dc",
+    "scripts/ingest_dataset.py": "602e8d7dce3bd619ef9a8200a98b6441bc3635e30bc15be4e1b53128009f769a",
+    "scripts/report_forecast_ml.py": "115d40f4900a68421debd7c3456412ae994da39d611c3b9ec5e70be51cbd15b6",
+    "scripts/run_baselines.py": "e3c73632dc8043418793002b2b7875d5477c1570739f5caf9debf4791869c8d6",
+    "scripts/run_forecast_ml.py": "c88d2672a786e778ac37180bb0dd073c5e7e33ede421bc146524ec4408e44c90",
+    "src/smartgrid/__init__.py": "d186c7ba24b78c9058f66ef09180212c1cc8125dd3ea8adaf8c99706bdf5d41e",
+    "src/smartgrid/billing/__init__.py": "e985156118f8b85d903385ea7bf7475dc9f23a9296d72f0b817fef16e3d9b1be",
+    "src/smartgrid/contracts.py": "4ba3090a8a2705d9fd2d820ca2f7fb4f8a41d2b66299d1e3e514fd6e10bc4cb6",
+    "src/smartgrid/dashboard/__init__.py": "9233dd41f7054286c60e85ac7dfd29994fc092a4ed3e4514fdd9ac0cdde1af21",
+    "src/smartgrid/data/__init__.py": "9e6acbf57c9650dbaf5180e47936b35cf953a78b189fccc422725503bf9092e4",
+    "src/smartgrid/data/_torch_windows.py": "428e2a5e2826a4327027db60e1260c6126ad7c1c0db7d7150fae3b391a8d199f",
+    "src/smartgrid/data/derive.py": "09eae348320e3f74f9978e231296b0ab815e5ca4bdcd63afcadefd846c02b596",
+    "src/smartgrid/data/impute.py": "45aee7278a2c1b85a6cc8c2127e6f8d9cc92a1a2c52f10607f7fb26bb820e6ff",
+    "src/smartgrid/data/loader.py": "f5a2fd4c21b9061a64e9e900271f03bfea78977e6cb62728bcefe1496b4a015e",
+    "src/smartgrid/data/scaling.py": "b8c96e10aca9c6e0885be72f7a80b19fdc1a0a50fd9b8b994bf31344b3a21a36",
+    "src/smartgrid/data/windowing.py": "e2614a43316cb097710911f3f5ca8633480cea8bdaf6983c67b5ac951b6bb734",
+    "src/smartgrid/data/windows.py": "a73909a0e44350a931ee65d2122d5ddcd91a47bc289c17cdc3fb932bde4fe31f",
+    "src/smartgrid/evaluation/__init__.py": "dc44a32424f70cae78b40cc37fe01dd3c772101a4ae80a598485f55cf0db3342",
+    "src/smartgrid/evaluation/benchmark.py": "1b8e72fa5f6649f6f749f6eec7c12a036b661af70bbb6d3dec942638b8485814",
+    "src/smartgrid/evaluation/demand.py": "50cebd09465557657c8fae18a4485ab7047c51decd914a0c9c82179f1f7c8f86",
+    "src/smartgrid/evaluation/metrics.py": "d0c45f746026e5af3da424d93700095fecb8f4973250f5ae43928e6c2374dab1",
+    "src/smartgrid/features/__init__.py": "4bf9fd4793cb7cd8a8e277585bbb38369942d9db61e344462e2eb019a2cd328e",
+    "src/smartgrid/features/behaviour.py": "8a3163e1dd4585303bb76715728b47bd89a86bc7881597a3b97d26a4606f5c86",
+    "src/smartgrid/features/calendar.py": "722732ae506a1aae32dd108ca60b2c3e706626d8e399ff1dee25434a34cadb81",
+    "src/smartgrid/features/calendar_features.py": "9b571458aacfde36975f27bd11aac80defc39f18145db8a922fa2889180a76ad",
+    "src/smartgrid/features/tabular.py": "1a2a31b30bb4b9141cb276fe2bb2532101626375d6b31efcb71773d2f3863eee",
+    "src/smartgrid/models/__init__.py": "2af047d9164021db51ed44c57ead2089e778cc73834f820ecfbaeaab9fbc732d",
+    "src/smartgrid/models/base.py": "d6293b75ee59a101bfae5d85294a5b8ee5828bfa64c23a95d016d0adc7a70c05",
+    "src/smartgrid/models/baselines.py": "521969301ca34c182788156427ad446f66771e7e56aa95c1be72e41ca9921363",
+    "src/smartgrid/models/classical.py": "2827bbd580d8dc47fd468966d5b04e6a43ba948698d0bc932b71d1b20f2929a6",
+    "tests/test_behaviour.py": "a48f58ce70e8c1a496f4795b1488a5f70a42ac8616e261f4d1b476e35712870a",
+    "tests/test_contracts.py": "ebd7b4949bd83fb1cb43ce9fb0d8534c26ad86ef8d3b3c7edbbfe19dc7544c53",
+    "tests/test_ingestion.py": "61eefbd552da77afb84666760945299735dc5d55c28b59f609acb605e36ef2ec",
+    "tests/test_metrics.py": "fe89baeca20280d3cd7c18b8772f31aedaf4f4e48db67e457440f73949d0e3dc",
+    "tests/test_tabular.py": "5e905cf01982b1d92ae88a30bfa2aa6fef3878f227068148c8e7b2eed0518b80",
+    "tests/test_windows.py": "cc90c156ecf793e436d3e653df18f2e2c19383612fa1e38899e5f109fa6f7a56"
+  }
+}

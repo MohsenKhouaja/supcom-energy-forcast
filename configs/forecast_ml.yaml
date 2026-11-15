@@ -1,0 +1,36 @@
+{
+  "training_origin_stride": 7,
+  "random_seed": 2026,
+  "rf_fit_budget_seconds": 2700,
+  "svr_budget_seconds": 1800,
+  "svr_training_rows": 20000,
+  "rf": {
+    "n_estimators": 200,
+    "max_depth_grid": [12, 8],
+    "max_features": 0.5,
+    "min_samples_leaf": 4,
+    "n_jobs": 2
+  },
+  "xgb": {
+    "n_estimators": 200,
+    "max_depth_grid": [4, 8],
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "tree_method": "hist",
+    "device": "cpu",
+    "n_jobs": 2
+  },
+  "svr": {
+    "kernel": "rbf",
+    "C_grid": [1.0, 10.0],
+    "epsilon": 0.1,
+    "gamma": "scale",
+    "cache_size": 512
+  },
+  "learning_curve": {
+    "requested_rows": [100000, 250000, 500000],
+    "max_depth": 4,
+    "flat_wape_threshold_percentage_points": 0.5
+  }
+}

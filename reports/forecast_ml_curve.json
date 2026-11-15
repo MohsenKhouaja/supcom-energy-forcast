@@ -1,0 +1,100 @@
+{
+  "options": {
+    "n_estimators": 200,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "tree_method": "hist",
+    "device": "cpu",
+    "n_jobs": 2,
+    "max_depth": 4,
+    "objective": "reg:squarederror",
+    "random_state": 2026
+  },
+  "population": {
+    "eligible_origins": 73640,
+    "usable_origins": 73639,
+    "additional_unusable": 1,
+    "selected_origins": 10520,
+    "rows": 1009920,
+    "stride": 7,
+    "first_origin": "2022-07-08 00:15:00",
+    "last_origin": "2024-08-30 22:30:00",
+    "quarter_hour_counts": {
+      "0": 2630,
+      "15": 2631,
+      "30": 2630,
+      "45": 2629
+    },
+    "month_counts": {
+      "2022-07": 298,
+      "2022-08": 411,
+      "2022-09": 397,
+      "2022-10": 426,
+      "2022-11": 411,
+      "2022-12": 425,
+      "2023-01": 425,
+      "2023-02": 384,
+      "2023-03": 412,
+      "2023-04": 384,
+      "2023-05": 425,
+      "2023-06": 380,
+      "2023-07": 411,
+      "2023-08": 397,
+      "2023-09": 381,
+      "2023-10": 425,
+      "2023-11": 412,
+      "2023-12": 425,
+      "2024-01": 425,
+      "2024-02": 398,
+      "2024-03": 425,
+      "2024-04": 411,
+      "2024-05": 426,
+      "2024-06": 411,
+      "2024-07": 411,
+      "2024-08": 384
+    }
+  },
+  "rows": [
+    {
+      "requested_rows": 100000,
+      "actual_rows": 100032,
+      "training_origins": 1042,
+      "validation_origins": 25124,
+      "validation_pairs": 2411904,
+      "val_dEa_wape_pct": 14.852773861347446,
+      "fit_seconds": 1.8820688100531697,
+      "predict_seconds": 2.2931208861991763
+    },
+    {
+      "requested_rows": 250000,
+      "actual_rows": 249984,
+      "training_origins": 2604,
+      "validation_origins": 25124,
+      "validation_pairs": 2411904,
+      "val_dEa_wape_pct": 15.08570480256071,
+      "fit_seconds": 4.290206545963883,
+      "predict_seconds": 2.3327224540989846
+    },
+    {
+      "requested_rows": 500000,
+      "actual_rows": 499968,
+      "training_origins": 5208,
+      "validation_origins": 25124,
+      "validation_pairs": 2411904,
+      "val_dEa_wape_pct": 15.30882297971267,
+      "fit_seconds": 7.645080552902073,
+      "predict_seconds": 2.2975109200924635
+    },
+    {
+      "requested_rows": 1009920,
+      "actual_rows": 1009920,
+      "training_origins": 10520,
+      "validation_origins": 25124,
+      "validation_pairs": 2411904,
+      "val_dEa_wape_pct": 15.55940298306795,
+      "fit_seconds": 15.671371951000765,
+      "predict_seconds": 2.2999044680036604
+    }
+  ]
+}

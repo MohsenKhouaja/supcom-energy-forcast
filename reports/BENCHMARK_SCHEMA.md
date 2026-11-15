@@ -4,8 +4,11 @@
 (run, model, split), one for each channel in this order: dEa, dEr, P_avg, S_avg.
 The header below is fixed. Later models use the same interface, evaluator and
 schema. A changed header requires an explicit versioned migration; extra or
-missing fields are rejected. Each invocation has one run_id across its runs.
-Use the chosen run_id when ranking; do not mix repeated invocations.
+missing fields are rejected. A run_id identifies a comparison cohort. An
+explicitly requested extension may reuse the baseline run_id for new model
+families; run_utc records that extension's actual invocation time. Duplicate
+(run_id, model, split, channel) entries are refused by the ML runner. Use the
+chosen run_id when ranking; do not mix unrelated cohorts.
 
 All metrics and persisted predictions are in **physical units**. Model.predict
 returns normalized channels; the harness applies the saved train-only scaler
@@ -54,6 +57,15 @@ PDE, physical consistency and cost describe the run and repeat on its four
 channel rows. Channel errors are pooled across all scored origin/horizon pairs.
 Overlapping rolling forecasts are counted repeatedly as distinct forecast
 cases; n_pairs is not a count of independent observations.
+
+A budget-censored model retains rows with n_scored_windows=0 and undefined
+errors. Such rows are unavailable for numeric accuracy ranking; an empty error
+is never zero. Its manifest/prediction metadata records the cause. Zero usable
+parameters in that case does not make it a successful zero-parameter baseline.
+If no completed model.predict call occurred, predict_seconds is empty, not a
+claimed zero-time prediction.
+For multi-stage ML, peak RSS is the maximum across its fitting/evaluation
+workers; wasted fit attempts are charged and disclosed in the run report.
 
 A whole window is excluded if **any** channel at **any** forecast step is
 non-finite. All calendar/horizon breakdowns keep that same exclusion mask.

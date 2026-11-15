@@ -1,0 +1,24 @@
+[
+  {
+    "split": "val",
+    "fit_seconds": 207.97024629591033,
+    "predict_seconds": 9.751321198884398,
+    "peak_rss_mb": 1840.185344,
+    "n_origins": 25124,
+    "n_scored_windows": 25124,
+    "n_excluded_windows": 0,
+    "n_parameters": 36753,
+    "status": "completed"
+  },
+  {
+    "split": "test",
+    "fit_seconds": 207.97024629591033,
+    "predict_seconds": 9.895415104925632,
+    "peak_rss_mb": 1840.185344,
+    "n_origins": 25500,
+    "n_scored_windows": 25500,
+    "n_excluded_windows": 0,
+    "n_parameters": 36753,
+    "status": "completed"
+  }
+]

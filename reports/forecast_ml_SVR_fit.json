@@ -1,0 +1,23 @@
+{
+  "family": "SVR",
+  "status": "did not converge within budget",
+  "fit_seconds": 1800.2508016489446,
+  "peak_rss_mb": 2287.546368,
+  "n_parameters": 0,
+  "last_progress": {
+    "utc": "2026-11-15T22:52:34.300394+00:00",
+    "model": "SVR",
+    "training_rows": 20000,
+    "sampled_origins": 209,
+    "phase": "candidate_validation",
+    "channel": "dEa",
+    "parameters": {
+      "C": 10.0
+    },
+    "candidate_fit_seconds": 12.47807742189616,
+    "candidate_parameters": 596051
+  },
+  "training": null,
+  "selection": [],
+  "half_sample": false
+}
