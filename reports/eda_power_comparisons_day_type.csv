@@ -1,0 +1,3 @@
+group,mean_kW,median_kW,observed_intervals,excluded_imputed,missing_observed
+Weekday,64.30816127095049,53.99,91585,191,0
+Weekend,51.08993685419058,39.415,36582,186,0

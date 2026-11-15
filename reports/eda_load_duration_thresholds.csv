@@ -1,0 +1,5 @@
+,fraction_of_subscription,threshold_kVA,intervals_above,percent_above,observed_intervals,excluded_imputed,missing_observed
+0,0.5,300.0,3,0.002340696123026988,128167,377,0
+1,0.6,360.0,0,0.0,128167,377,0
+2,0.7,420.0,0,0.0,128167,377,0
+3,0.8,480.0,0,0.0,128167,377,0

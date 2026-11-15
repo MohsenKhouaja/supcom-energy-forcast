@@ -2,11 +2,18 @@
 
 Notebooks explain and visualize results; reusable transformations stay in `src/smartgrid`.
 
-Planned order:
+`01_eda.ipynb` is the executed observed-only analysis of the existing processed
+Parquets. It calls reusable functions in `smartgrid.features.behaviour`; it does
+not rerun ingestion, fit models or materialize windows. The inferred academic
+calendar is labelled **PROVISIONAL** pending the supervisor's actual calendar.
 
-1. `01_data_audit.ipynb` - workbook structure, cadence, gaps, units, register semantics.
-2. `02_eda.ipynb` - load profiles, peaks, base load, calendar/season comparisons.
-3. `03_benchmark_review.ipynb` - actual vs predicted curves and error analysis.
-4. `04_billing_validation.ipynb` - tariff-ledger and invoice reconciliation.
+On the VM, with the project venv on PATH, PYTHONPATH pointing to the project
+`src/`, and Jupyter/cache/temp directories inside the project, execute headlessly:
 
-The first notebook will be created only after a real sample workbook is available.
+```sh
+jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb
+```
+
+Findings and complete aggregate tables are under `reports/EDA.md` and
+`reports/eda_*.csv`; all figures are `reports/figures/*.png` at 150 dpi.
+Synthetic-only tests are in `tests/test_behaviour.py`.

@@ -1,0 +1,3 @@
+group,mean_kW,median_kW,observed_intervals,excluded_imputed,missing_observed
+Term-like PROVISIONAL,57.76203693965241,46.66,77965,179,0
+Vacation-like PROVISIONAL,64.84239293255249,58.72,50202,198,0
